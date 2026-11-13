@@ -32,31 +32,23 @@ jQuery(document).ready(function($) {
 							$('#jet-product-button-container').hide('slow');
 						}
 						$('#jet_vnoska').text(json.jet_vnoska);
-						$('#jet_vnoska_second').text(json.jet_vnoska_second);
 						$('#jet_vnoski_text').text(parseInt($('#jet_vnoski').val()));
 						$('#jet_priceall').text(json.jet_priceall);
-						$('#jet_priceall_second').text(json.jet_priceall_second);
 						$('#jet_total_credit_price').text(json.jet_total_credit_price);
-						$('#jet_total_credit_price_second').text(json.jet_total_credit_price_second);
 						$('#jet_vnoska_popup').text(json.jet_vnoska);
-						$('#jet_vnoska_popup_second').text(json.jet_vnoska_second);
 						$('#jet_gpr').text(json.jet_gpr);
 						$('#jet_glp').text(json.jet_glp);
 						$('#jet_obshto').text(json.jet_obshto);
-						$('#jet_obshto_second').text(json.jet_obshto_second);
 						
 						if (parseInt($('#jet_card_in').val()) === 1) {
 							$('#jet_vnoska_card').text(json.jet_vnoska_card);
-							$('#jet_vnoska_card_second').text(json.jet_vnoska_card_second);
 							$('#jet_vnoski_text_card').text(parseInt($('#jet_vnoski').val()));
 							
 							if (card === 1) {
 								$('#jet_vnoska_popup').text(json.jet_vnoska_card);
-								$('#jet_vnoska_popup_second').text(json.jet_vnoska_card_second);
 								$('#jet_gpr').text(json.jet_gpr_card);
 								$('#jet_glp').text(json.jet_glp_card);
 								$('#jet_obshto').text(json.jet_obshto_card);
-								$('#jet_obshto_second').text(json.jet_obshto_card_second);
 							}
 						}
 					}
@@ -153,24 +145,6 @@ jQuery(document).ready(function($) {
 								}
 							}
 
-							const jet_eur = document.getElementById('jet_eur');
-							const jet_currency_code = document.getElementById('jet_currency_code');
-							if (jet_eur && jet_currency_code) {
-								switch (parseInt(jet_eur.value)) {
-									case 1:
-									if (jet_currency_code.value == "EUR") {
-										total_price = total_price * 1.95583;
-									}
-									break;
-									case 2:
-									case 3:
-									if (jet_currency_code.value == "BGN") {
-										total_price = total_price / 1.95583;
-									}
-									break;
-									default:
-								}
-							}
 
 							jet_price1 = parseFloat(jet_price1) + total_price;
 							jetPriceall = parseFloat(jet_price1) * jet_quantity;
@@ -246,7 +220,7 @@ jQuery(document).ready(function($) {
 				});
 			} else {
 				$('#jet_alert_overlay').addClass('show');
-				jetShowCustomAlert('Месечната вноска трябва да надхвърля сумата от 20 лв.!', false);
+				jetShowCustomAlert('Месечната вноска трябва да надхвърля сумата от 20 евро!', false);
 				$('#uslovia').prop('checked', false);
 				$('#uslovia1').prop('checked', false);
 			}
@@ -444,7 +418,7 @@ jQuery(document).ready(function($) {
 			$('#jet_step_2').show('slow');
 		}else{
 			$('#jet_alert_overlay').addClass("show");
-			jetShowCustomAlert('Месечната вноска трябва да надхвърля сумата от 20 лв.!', false);
+			jetShowCustomAlert('Месечната вноска трябва да надхвърля сумата от 20 евро!', false);
 		}
 	});
 

@@ -5,8 +5,11 @@ class ControllerExtensionPaymentJet extends Controller {
 	const JETCREDIT_FINANCIAL_PRECISION = 1.0e-08;
 
 	public function index() {
+		if (!isset($this->session->data['currency']) || $this->session->data['currency'] !== 'EUR') {
+			return '';
+		}
 		$this->load->language('extension/payment/jet');
-		$data['JET_VERSION'] = '1.8.5';
+		$data['JET_VERSION'] = '2.0.2';
 
 		$data['button_confirm'] = $this->language->get('button_confirm');
 		$data['text_loading'] = $this->language->get('text_loading');
@@ -20,40 +23,9 @@ class ControllerExtensionPaymentJet extends Controller {
 		$data['jet_price'] = $jet_price;
 		$data['jet_minstojnost'] = $jet_minstojnost;
 		$data['jet_vnoski'] = (int) $this->config->get('mt_jet_credit_vnoski');
-		$jet_currency_code = $this->session->data['currency'];
-		$jet_eur = (int) $this->config->get('mt_jet_credit_eur');
-		$jet_sign = 'лева';
-		$jet_sign_second = 'евро';
-		$jet_min_250 = 250.00;
-		switch ($jet_eur) {
-			case 0:
-				$jet_sign = 'лева';
-				$jet_sign_second = '';
-				break;
-			case 1:
-				if ($jet_currency_code == "EUR") {
-					$jet_price = number_format($jet_price * 1.95583, 2, ".", "");
-				}
-				$jet_sign = 'лева';
-				$jet_sign_second = 'евро';
-				break;
-			case 2:
-				if ($jet_currency_code == "BGN") {
-					$jet_price = number_format($jet_price / 1.95583, 2, ".", "");
-				}
-				$jet_sign = 'евро';
-				$jet_sign_second = 'лева';
-				$jet_min_250 = 125.00;
-				break;
-			case 3:
-				if ($jet_currency_code == "BGN") {
-					$jet_price = number_format($jet_price / 1.95583, 2, ".", "");
-				}
-				$jet_sign = 'евро';
-				$jet_sign_second = '';
-				$jet_min_250 = 125.00;
-				break;
-		}
+
+		$jet_sign = 'евро';
+		$jet_min_250 = 125.00;
 		$jet_vnoski_default = (int)$this->config->get('mt_jet_credit_vnoski');
 		if ($jet_price < $jet_min_250) {
 			$jet_vnoski = '9';
@@ -73,21 +45,7 @@ class ControllerExtensionPaymentJet extends Controller {
 			}
 			$jet_product_vr_current = substr($jet_product_vr_current, 0, -2);
 			$jet_products_pr_current = $this->tax->calculate($cart_item['price'], $cart_item['tax_class_id'], $this->config->get('config_tax'));
-			switch ($jet_eur) {
-				case 0:
-					break;
-				case 1:
-					if ($jet_currency_code == "EUR") {
-						$jet_products_pr_current = $jet_products_pr_current * 1.95583;
-					}
-					break;
-				case 2:
-				case 3:
-					if ($jet_currency_code == "BGN") {
-						$jet_products_pr_current = $jet_products_pr_current / 1.95583;
-					}
-					break;
-			}
+
 			$jet_products_pr .= number_format($jet_products_pr_current, 2, ".", "") . '_';
 			$jet_products_vr .= $jet_product_vr_current . '_';
 		}
@@ -96,13 +54,16 @@ class ControllerExtensionPaymentJet extends Controller {
 		$data['jet_products_pr'] = substr($jet_products_pr, 0, -1);
 		$data['jet_products_vr'] = substr($jet_products_vr, 0, -1);
 		$data['jet_sign'] = $jet_sign;
-		$data['jet_sign_second'] = $jet_sign_second;
-		$data['jet_eur'] = $jet_eur;
 
 		return $this->load->view('extension/payment/jet', $data);
 	}
 
 	public function confirm() {
+		if (!isset($this->session->data['currency']) || $this->session->data['currency'] !== 'EUR') {
+			$this->response->addHeader('Content-Type: application/json');
+			$this->response->setOutput(json_encode(array('success' => 'unsuccess')));
+			return;
+		}
 		$json = [];
 		$json['success'] = 'unsuccess';
 		$json['redirect'] = $this->url->link('checkout/success');
@@ -183,23 +144,8 @@ class ControllerExtensionPaymentJet extends Controller {
 			$toEmail_admin = (string) $this->config->get('config_email');
 			$toEmail_other = (string) $this->config->get('mt_jet_credit_mail');
 			$jet_id = (string) $this->config->get('mt_jet_credit_id');
-			$jet_eur = (int) $this->config->get('mt_jet_credit_eur');
 
-			$jet_sign = 'лева';
-			switch ($jet_eur) {
-				case 0:
-					$jet_sign = 'лева';
-					break;
-				case 1:
-					$jet_sign = 'лева';
-					break;
-				case 2:
-					$jet_sign = 'евро';
-					break;
-				case 3:
-					$jet_sign = 'евро';
-					break;
-			}
+			$jet_sign = 'евро';
 
 			$body = "Данни за потребителя:\r\n";
 			$body .= "Собствено име: $jet_name;\r\n";

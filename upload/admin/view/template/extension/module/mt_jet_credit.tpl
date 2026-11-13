@@ -313,20 +313,7 @@
 									<div class="text-small">Дали да се показва текст, в дясно от бутона указващ месечната вноска за избрания период на лизинг?</div>
 								</div>
 							</div>
-
-							<div class="form-group">
-								<label class="col-sm-4 control-label" for="mt_jet_credit_eur">Избор на режим на работа с валути</label>
-								<div class="col-sm-8">
-									<select name="mt_jet_credit_eur" id="mt_jet_credit_eur" class="form-control">
-										<option value=0 <?php if ($mt_jet_credit_eur == 0) { echo 'selected'; } ?>>Единична визуализация в лева и изпращания на исканията в лева</option>
-										<option value=1 <?php if ($mt_jet_credit_eur == 1) { echo 'selected'; } ?>>Двойна визуализация в лева/евро и изпращания на исканията в лева</option>
-										<option value=2 <?php if ($mt_jet_credit_eur == 2) { echo 'selected'; } ?>>Двойна визуализация в евро/лева и изпращания на исканията в евро</option>
-										<option value=3 <?php if ($mt_jet_credit_eur == 3) { echo 'selected'; } ?>>Единична визуализация в евро и изпращания на исканията в евро</option>
-									</select>
-									<div class="text-small">Избор на режим на работа с валути. Възможност за показване в евро или лева. Изпращане на исканията в евро или лева с превалутиране ако е необходимо</div>
-								</div>
-							</div>
-						</div>
+					</div>
 
 						<div class="tab-pane" id="tab-functional">
 							<div class="form-group">
@@ -407,7 +394,7 @@
 							<div class="form-group">
 								<label class="col-sm-4 control-label" for="mt_jet_credit_price">Минимална сума</label>
 								<div class="col-sm-8">
-									<input type="number" min="0" max="999999" step="1" name="mt_jet_credit_price" value="<?php echo $mt_jet_credit_price; ?>" placeholder="Минимална сума (лв.)" id="mt_jet_credit_price" class="form-control" />
+									<input type="number" min="0" max="999999" step="1" name="mt_jet_credit_price" value="<?php echo $mt_jet_credit_price; ?>" placeholder="Минимална сума (евро)" id="mt_jet_credit_price" class="form-control" />
 									<div class="small">Минимално възможната сума на стоките за закупуване на кредит през ПБ Лични Финанси</div>
 								</div>
 							</div>
@@ -453,7 +440,6 @@
 															<img id="mt-jet-wide-preview-logo-main" src="<?php echo $mt_jet_preview_jet_logo; ?>" alt="ПБ Лични Финанси" class="mt-jet-wide-button-logo"<?php if ($mt_jet_credit_btn_logo != 1) { echo ' style="display:none"'; } ?> />
 														</div>
 														<div class="mt-jet-wide-button-text">12 x 97.33 евро
-															<span class="mt-jet-wide-button-text-second">(190.37 лв.)</span>
 														</div>
 													</div>
 												</div>
@@ -464,7 +450,6 @@
 															<img id="mt-jet-wide-preview-logo-card" src="<?php echo $mt_jet_preview_jet_logo; ?>" alt="ПБ Лични Финанси" class="mt-jet-wide-button-logo"<?php if ($mt_jet_credit_btn_logo != 1) { echo ' style="display:none"'; } ?> />
 														</div>
 														<div class="mt-jet-wide-button-text">12 x 97.33 евро
-															<span class="mt-jet-wide-button-text-second">(190.37 лв.)</span>
 														</div>
 													</div>
 												</div>

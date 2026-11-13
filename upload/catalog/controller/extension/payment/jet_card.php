@@ -6,8 +6,11 @@ class ControllerExtensionPaymentJetCard extends Controller {
 	const JETCREDIT_FINANCIAL_PRECISION = 1.0e-08;
 
 	public function index() {
+		if (!isset($this->session->data['currency']) || $this->session->data['currency'] !== 'EUR') {
+			return '';
+		}
 		$this->load->language('extension/payment/jet_card');
-		$data['JET_VERSION'] = '1.8.5';
+		$data['JET_VERSION'] = '2.0.2';
 
 		$data['button_confirm'] = $this->language->get('button_confirm');
 		$data['text_loading'] = $this->language->get('text_loading');
@@ -23,42 +26,9 @@ class ControllerExtensionPaymentJetCard extends Controller {
 		$data['jet_card_minstojnost'] = $jet_card_minstojnost;
 		$data['jet_card_vnoski'] = (int)$this->config->get('mt_jet_credit_vnoski');
 
-		$jet_card_currency_code = $this->session->data['currency'];
 
-		$jet_card_eur = (int)$this->config->get('mt_jet_credit_eur');
-		$jet_card_sign = 'лева';
-		$jet_card_sign_second = 'евро';
-		$jet_card_min_250 = 250.00;
-
-		switch ($jet_card_eur) {
-			case 0:
-				$jet_card_sign = 'лева';
-				$jet_card_sign_second = '';
-				break;
-			case 1:
-				if ($jet_card_currency_code == "EUR") {
-					$jet_card_price = number_format($jet_card_price * 1.95583, 2, ".", "");
-				}
-				$jet_card_sign = 'лева';
-				$jet_card_sign_second = 'евро';
-				break;
-			case 2:
-				if ($jet_card_currency_code == "BGN") {
-					$jet_card_price = number_format($jet_card_price / 1.95583, 2, ".", "");
-				}
-				$jet_card_sign = 'евро';
-				$jet_card_sign_second = 'лева';
-				$jet_card_min_250 = 125.00;
-				break;
-			case 3:
-				if ($jet_card_currency_code == "BGN") {
-					$jet_card_price = number_format($jet_card_price / 1.95583, 2, ".", "");
-				}
-				$jet_card_sign = 'евро';
-				$jet_card_sign_second = '';
-				$jet_card_min_250 = 125.00;
-				break;
-		}
+		$jet_card_sign = 'евро';
+		$jet_card_min_250 = 125.00;
 
 		$jet_card_vnoski_default = (int)$this->config->get('mt_jet_credit_vnoski');
 		if ($jet_card_price < $jet_card_min_250) {
@@ -80,21 +50,7 @@ class ControllerExtensionPaymentJetCard extends Controller {
 			}
 			$jet_card_product_vr_current = substr($jet_card_product_vr_current, 0, -2);
 			$jet_card_products_pr_current = $this->tax->calculate($cart_item['price'], $cart_item['tax_class_id'], $this->config->get('config_tax'));
-			switch ($jet_card_eur) {
-				case 0:
-					break;
-				case 1:
-					if ($jet_card_currency_code == "EUR") {
-						$jet_card_products_pr_current = $jet_card_products_pr_current * 1.95583;
-					}
-					break;
-				case 2:
-				case 3:
-					if ($jet_card_currency_code == "BGN") {
-						$jet_card_products_pr_current = $jet_card_products_pr_current / 1.95583;
-					}
-					break;
-			}
+
 			$jet_card_products_pr .= number_format($jet_card_products_pr_current, 2, ".", "") . '_';
 			$jet_card_products_vr .= $jet_card_product_vr_current . '_';
 		}
@@ -103,13 +59,16 @@ class ControllerExtensionPaymentJetCard extends Controller {
 		$data['jet_card_products_pr'] = substr($jet_card_products_pr, 0, -1);
 		$data['jet_card_products_vr'] = substr($jet_card_products_vr, 0, -1);
 		$data['jet_card_sign'] = $jet_card_sign;
-		$data['jet_card_sign_second'] = $jet_card_sign_second;
-		$data['jet_card_eur'] = $jet_card_eur;
 
 		return $this->load->view('extension/payment/jet_card', $data);
 	}
 
 	public function confirm() {
+		if (!isset($this->session->data['currency']) || $this->session->data['currency'] !== 'EUR') {
+			$this->response->addHeader('Content-Type: application/json');
+			$this->response->setOutput(json_encode(array('success' => 'unsuccess')));
+			return;
+		}
 		$json = [];
 		$json['success'] = 'unsuccess';
 		$json['redirect'] = $this->url->link('checkout/success');
@@ -192,22 +151,7 @@ class ControllerExtensionPaymentJetCard extends Controller {
 			$toEmail_other = (string)$this->config->get('mt_jet_credit_mail');
 			$jet_id = (string)$this->config->get('mt_jet_credit_id');
 
-			$jet_card_eur = (int)$this->config->get('mt_jet_credit_eur');
-			$jet_card_sign = 'лева';
-			switch ($jet_card_eur) {
-				case 0:
-					$jet_card_sign = 'лева';
-					break;
-				case 1:
-					$jet_card_sign = 'лева';
-					break;
-				case 2:
-					$jet_card_sign = 'евро';
-					break;
-				case 3:
-					$jet_card_sign = 'евро';
-					break;
-			}
+			$jet_card_sign = 'евро';
 
 			$body = "Данни за потребителя:\r\n";
 

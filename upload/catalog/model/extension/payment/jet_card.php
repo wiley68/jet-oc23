@@ -18,7 +18,7 @@ class ModelExtensionPaymentJetCard extends Model {
 		$jet_card_payment_status = $this->config->get('jet_card_status');
 		$jet_card_currency_code  = $this->session->data['currency'];
 
-		if ($jet_card_status == 1 & $jet_card_payment_status == 1 & ($jet_card_currency_code == 'EUR' || $jet_card_currency_code == 'BGN')) {
+		if ($jet_card_status == 1 & $jet_card_payment_status == 1 & ($jet_card_currency_code === 'EUR')) {
 			$jet_card_minstojnost = (float)$this->config->get('mt_jet_credit_price');
 			
 			if ($total < $jet_card_minstojnost) {

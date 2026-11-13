@@ -34,7 +34,7 @@ jQuery(document).ready(function($) {
 					$('#jet_step_2').css('display', 'block');
 				} else {
 					$('#jet_alert_overlay').addClass('show');
-					jetShowCustomAlert('Месечната вноска трябва да надхвърля сумата от 20 лв.!', false);
+					jetShowCustomAlert('Месечната вноска трябва да надхвърля сумата от 20 евро!', false);
 				}
 			});
 			$('#back2_jetcredit').on('click', function(event) {
@@ -96,30 +96,22 @@ jQuery(document).ready(function($) {
 				success: function(json) {
 					if (json.success === 'success') {
 						$('#jet_vnoska').text(json.jet_vnoska);
-						if ($('#jet_vnoska_second').length !== 0) $('#jet_vnoska_second').text(json.jet_vnoska_second);
 						$('#jet_vnoski_text').text(parseInt($('#jet_vnoski').val()));
 						$('#jet_priceall').text(json.jet_priceall);
-						if ($('#jet_priceall_second').length !== 0) $('#jet_priceall_second').text(json.jet_priceall_second);
 						$('#jet_total_credit_price').text(json.jet_total_credit_price);
-						if ($('#jet_total_credit_price_second').length !== 0) $('#jet_total_credit_price_second').text(json.jet_total_credit_price_second);
 						$('#jet_vnoska_popup').text(json.jet_vnoska);
-						if ($('#jet_vnoska_popup_second').length !== 0) $('#jet_vnoska_popup_second').text(json.jet_vnoska_second);
 						$('#jet_gpr').text(json.jet_gpr);
 						$('#jet_glp').text(json.jet_glp);
 						$('#jet_obshto').text(json.jet_obshto);
-						if ($('#jet_obshto_second').length !== 0) $('#jet_obshto_second').text(json.jet_obshto_second);
 						if (parseInt($('#jet_card_in').val()) == 1) {
 							if ($('#jet_vnoska_card').length !== 0) {
 								$('#jet_vnoska_card').text(json.jet_vnoska_card);
-								if ($('#jet_vnoska_card_second').length !== 0) $('#jet_vnoska_card_second').text(json.jet_vnoska_card_second);
 								$('#jet_vnoski_text_card').text(parseInt($('#jet_vnoski').val()));
 								if (card == 1) {
 									$('#jet_vnoska_popup').text(json.jet_vnoska_card);
-									if ($('#jet_vnoska_popup_second').length !== 0) $('#jet_vnoska_popup_second').text(json.jet_vnoska_card_second);
 									$('#jet_gpr').text(json.jet_gpr_card);
 									$('#jet_glp').text(json.jet_glp_card);
 									$('#jet_obshto').text(json.jet_obshto_card);
-									if ($('#jet_obshto_second').length !== 0) $('#jet_obshto_second').text(json.jet_obshto_card_second);
 								}
 							}
 						}
@@ -282,7 +274,7 @@ jQuery(document).ready(function($) {
 				});
 			} else {
 				$("#jet_alert_overlay").addClass("show");
-				jetShowCustomAlert('Месечната вноска трябва да надхвърля сумата от 20 лв.!', false);
+				jetShowCustomAlert('Месечната вноска трябва да надхвърля сумата от 20 евро!', false);
 				$('#uslovia').prop('checked', false);
 				$('#uslovia1').prop('checked', false);
 			}

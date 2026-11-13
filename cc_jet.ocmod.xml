@@ -1,7 +1,7 @@
 <modification>
 	<name>Кредитен Калкулатор ПБ Лични Финанси</name>
 	<code>cc_jet</code>
-	<version>1.8.5 for OpenCart 2.3.x</version>
+	<version>2.0.2 for OpenCart 2.3.x</version>
 	<author>Авалон ООД</author>
 	<link>http://avalonbg.com</link>
 
@@ -12,7 +12,9 @@ $data['heading_title'] = $product_info['name'];
 			]]></search>
 			<add position="before"><![CDATA[
 		/** avalon кредитен калкулатор Pariba **/
-		$this->document->addScript('catalog/view/theme/default/template/extension/mt_jet_credit/creditjet_products.js?ver='.filemtime(DIR_APPLICATION . "view/theme/default/template/extension/mt_jet_credit/creditjet_products.js"));
+		if (isset($this->session->data['currency']) && $this->session->data['currency'] === 'EUR') {
+			$this->document->addScript('catalog/view/theme/default/template/extension/mt_jet_credit/creditjet_products.js?ver='.filemtime(DIR_APPLICATION . "view/theme/default/template/extension/mt_jet_credit/creditjet_products.js"));
+		}
 		$this->document->addStyle('catalog/view/theme/default/template/extension/mt_jet_credit/creditjet_products.css?ver='.filemtime(DIR_APPLICATION . "view/theme/default/template/extension/mt_jet_credit/creditjet_products.css"));
 		/** avalon кредитен калкулатор Pariba **/
 			]]></add>
@@ -46,40 +48,9 @@ $data['products'] = array();
 			$data['jet_price'] = (float)$jet_price;
 			
 			$jet_currency_code = $this->session->data['currency'];
-			if ($jet_currency_code == 'EUR' || $jet_currency_code == 'BGN') {
-				$data['jet_eur'] = (int) $this->config->get('mt_jet_credit_eur');
-				$data['jet_sign'] = 'лв.';
-				$data['jet_sign_second'] = 'евро';
-				$jet_min_250 = 250.00;
-				switch ($data['jet_eur']) {
-					case 0:
-						$data['jet_sign'] = 'лв.';
-						$data['jet_sign_second'] = '';
-						break;
-					case 1:
-						if ($jet_currency_code == "EUR") {
-							$jet_price = number_format($jet_price * 1.95583, 2, ".", "");
-						}
-						$data['jet_sign'] = 'лв.';
-						$data['jet_sign_second'] = 'евро';
-						break;
-					case 2:
-						if ($jet_currency_code == "BGN") {
-							$jet_price = number_format($jet_price / 1.95583, 2, ".", "");
-						}
-						$data['jet_sign'] = 'евро';
-						$data['jet_sign_second'] = 'лв.';
-						$jet_min_250 = 125.00;
-						break;
-					case 3:
-						if ($jet_currency_code == "BGN") {
-							$jet_price = number_format($jet_price / 1.95583, 2, ".", "");
-						}
-						$data['jet_sign'] = 'евро';
-						$data['jet_sign_second'] = '';
-						$jet_min_250 = 125.00;
-						break;
-				}
+			if ($jet_currency_code === 'EUR') {
+				$data['jet_sign'] = 'евро';
+				$jet_min_250 = 125.00;
 
 				if ($jet_price < $jet_min_250) {
 					$data['jet_vnoski'] = '9';
@@ -161,12 +132,7 @@ $data['products'] = array();
 				</div>
 				<?php if ($jet_vnoska == 1) { ?>
 				<div class="jet_wide_button_text">
-					<?php if ($jet_sign_second == '') { ?>
 						<span id="jet_vnoski_text"></span> x <span id="jet_vnoska"></span> <?php echo $jet_sign; ?>
-					<?php } else { ?>
-						<span id="jet_vnoski_text"></span> x <span id="jet_vnoska"></span> <?php echo $jet_sign; ?>
-						<span class="jet_wide_button_text_second">(<span id="jet_vnoska_second"></span> <?php echo $jet_sign_second; ?>)</span>
-					<?php } ?>
 				</div>
 				<?php } ?>
 			</button>
@@ -178,12 +144,7 @@ $data['products'] = array();
 				</div>
 				<?php if ($jet_vnoska == 1) { ?>
 				<div class="jet_wide_button_text">
-					<?php if ($jet_sign_second == '') { ?>
 						<span id="jet_vnoski_text_card"></span> x <span id="jet_vnoska_card"></span> <?php echo $jet_sign; ?>
-					<?php } else { ?>
-						<span id="jet_vnoski_text_card"></span> x <span id="jet_vnoska_card"></span> <?php echo $jet_sign; ?>
-						<span class="jet_wide_button_text_second">(<span id="jet_vnoska_card_second"></span> <?php echo $jet_sign_second; ?>)</span>
-					<?php } ?>
 				</div>
 				<?php } ?>
 			</button>
@@ -205,14 +166,7 @@ $data['products'] = array();
 			<?php if ($jet_vnoska == 1) { ?>
 			<tr>
 				<td class="jet_button_table">
-					<?php if ($jet_sign_second == '') { ?>
 						<p><span id="jet_vnoski_text"></span> x <span id="jet_vnoska"></span> <?php echo $jet_sign; ?></p>
-					<?php } else { ?>
-						<p>
-							<span id="jet_vnoski_text"></span> x <span id="jet_vnoska"></span> <?php echo $jet_sign; ?><br />
-							<span style="font-size:75%;font-weight:400;">(<span id="jet_vnoska_second"></span> <?php echo $jet_sign_second; ?>)</span>
-						</p>
-					<?php } ?>
 			</tr>
 			<?php } ?>
 		</table>
@@ -232,14 +186,7 @@ $data['products'] = array();
 			<?php if ($jet_vnoska == 1) { ?>
 			<tr>
 				<td class="jet_button_table">
-					<?php if ($jet_sign_second == '') { ?>
 						<p><span id="jet_vnoski_text_card"></span> x <span id="jet_vnoska_card"></span> <?php echo $jet_sign; ?></p>
-					<?php } else { ?>
-						<p>
-							<span id="jet_vnoski_text_card"></span> x <span id="jet_vnoska_card"></span> <?php echo $jet_sign; ?><br />
-							<span style="font-size:75%;font-weight:400;">(<span id="jet_vnoska_card_second"></span> <?php echo $jet_sign_second; ?>)</span>
-						</p>
-					<?php } ?>
 				</td>
 			</tr>
 			<?php } ?>
@@ -275,27 +222,13 @@ $data['products'] = array();
 							</div>
 							<div class="jet_row">
 								<div class="jet_column_left">
-									<?php if ($jet_sign_second == '') { ?>
 										Цена на стоките (<?php echo $jet_sign; ?>)
-									<?php } else { ?>
-										Цена на стоките (<?php echo $jet_sign; ?>
-										<span style='font-size:60%;font-weight:400;height:16px;'>&nbsp;/&nbsp;<?php echo $jet_sign_second; ?></span>)
-									<?php } ?>
 								</div>
 								<div class="jet_column_right">
-									<?php if ($jet_eur == 0 || $jet_eur == 3) { ?>
 										<div class="jet_input_text jet_disable">
 											<div><span id="jet_priceall"></span></div>
 											<div></div>
 										</div>
-									<?php } else { ?>
-										<div class="jet_input_text jet_disable">
-											<div><span id="jet_priceall"></span></div>
-											<div>
-												<span>/</span><span id="jet_priceall_second"></span>
-											</div>
-										</div>
-									<?php } ?>
 								</div>
 							</div>
 							<div class="jet_row">
@@ -322,52 +255,24 @@ $data['products'] = array();
 							</div>
 							<div class="jet_row">
 								<div class="jet_column_left">
-									<?php if ($jet_sign_second == '') { ?>
 										Общо кредит (<?php echo $jet_sign; ?>)
-									<?php } else { ?>
-										Общо кредит (<?php echo $jet_sign; ?>
-										<span style='font-size:60%;font-weight:400;height:16px;'>&nbsp;/&nbsp;<?php echo $jet_sign_second; ?></span>)
-									<?php } ?>
 								</div>
 								<div class="jet_column_right">
-									<?php if ($jet_eur == 0 || $jet_eur == 3) { ?>
 										<div class="jet_input_text jet_disable">
 											<div><span id="jet_total_credit_price"></span></div>
 											<div></div>
 										</div>
-									<?php } else { ?>
-										<div class="jet_input_text jet_disable">
-											<div><span id="jet_total_credit_price"></span></div>
-											<div>
-												<span>/</span><span id="jet_total_credit_price_second"></span>
-											</div>
-										</div>
-									<?php } ?>
 								</div>
 							</div>
 							<div class="jet_row">
 								<div class="jet_column_left">
-									<?php if ($jet_sign_second == '') { ?>
 										Месечна вноска (<?php echo $jet_sign; ?>)
-									<?php } else { ?>
-										Месечна вноска (<?php echo $jet_sign; ?>
-										<span style='font-size:60%;font-weight:400;height:16px;'>&nbsp;/&nbsp;<?php echo $jet_sign_second; ?></span>)
-									<?php } ?>
 								</div>
 								<div class="jet_column_right">
-									<?php if ($jet_eur == 0 || $jet_eur == 3) { ?>
 										<div class="jet_input_text jet_disable">
 											<div><span id="jet_vnoska_popup"></span></div>
 											<div></div>
 										</div>
-									<?php } else { ?>
-										<div class="jet_input_text jet_disable">
-											<div><span id="jet_vnoska_popup"></span></div>
-											<div>
-												<span>/</span><span id="jet_vnoska_popup_second"></span>
-											</div>
-										</div>
-									<?php } ?>
 								</div>
 							</div>
 							<div class="jet_row">
@@ -394,27 +299,13 @@ $data['products'] = array();
 							</div>
 							<div class="jet_row">
 								<div class="jet_column_left">
-									<?php if ($jet_sign_second == '') { ?>
 										Общо плащания (<?php echo $jet_sign; ?>)
-									<?php } else { ?>
-										Общо плащания (<?php echo $jet_sign; ?>
-										<span style='font-size:60%;font-weight:400;height:16px;'>&nbsp;/&nbsp;<?php echo $jet_sign_second; ?></span>)
-									<?php } ?>
 								</div>
 								<div class="jet_column_right">
-									<?php if ($jet_eur == 0 || $jet_eur == 3) { ?>
 										<div class="jet_input_text jet_disable">
 											<div><span id="jet_obshto"></span></div>
 											<div></div>
 										</div>
-									<?php } else { ?>
-										<div class="jet_input_text jet_disable">
-											<div><span id="jet_obshto"></span></div>
-											<div>
-												<span>/</span><span id="jet_obshto_second"></span>
-											</div>
-										</div>
-									<?php } ?>
 								</div>
 							</div>
 							<div class="jet_hr"></div>
@@ -626,7 +517,9 @@ $data['products'] = array();
 			]]></search>
 			<add position="after"><![CDATA[
 		/** avalon кредитен калкулатор **/
-		$this->document->addScript('catalog/view/theme/default/template/extension/mt_jet_credit/creditjet_cart.js?ver='.filemtime(DIR_APPLICATION . "view/theme/default/template/extension/mt_jet_credit/creditjet_cart.js"));
+		if (isset($this->session->data['currency']) && $this->session->data['currency'] === 'EUR') {
+			$this->document->addScript('catalog/view/theme/default/template/extension/mt_jet_credit/creditjet_cart.js?ver='.filemtime(DIR_APPLICATION . "view/theme/default/template/extension/mt_jet_credit/creditjet_cart.js"));
+		}
 		$this->document->addStyle('catalog/view/theme/default/template/extension/mt_jet_credit/creditjet_cart.css?ver='.filemtime(DIR_APPLICATION . "view/theme/default/template/extension/mt_jet_credit/creditjet_cart.css"));
 		/** avalon кредитен калкулатор **/
 			]]></add>
@@ -709,40 +602,9 @@ $data['products'] = array();
 			$data['jet_price'] = $jet_price;
 			
 			$jet_currency_code = $this->session->data['currency'];
-			if ($jet_currency_code == 'EUR' || $jet_currency_code == 'BGN') {
-				$data['jet_eur'] = (int) $this->config->get('mt_jet_credit_eur');
-				$data['jet_sign'] = 'лв.';
-				$data['jet_sign_second'] = 'евро';
-				$jet_min_250 = 250.00;
-				switch ($data['jet_eur']) {
-					case 0:
-						$data['jet_sign'] = 'лв.';
-						$data['jet_sign_second'] = '';
-						break;
-					case 1:
-						if ($jet_currency_code == "EUR") {
-							$jet_price = number_format($jet_price * 1.95583, 2, ".", "");
-						}
-						$data['jet_sign'] = 'лв.';
-						$data['jet_sign_second'] = 'евро';
-						break;
-					case 2:
-						if ($jet_currency_code == "BGN") {
-							$jet_price = number_format($jet_price / 1.95583, 2, ".", "");
-						}
-						$data['jet_sign'] = 'евро';
-						$data['jet_sign_second'] = 'лв.';
-						$jet_min_250 = 125.00;
-						break;
-					case 3:
-						if ($jet_currency_code == "BGN") {
-							$jet_price = number_format($jet_price / 1.95583, 2, ".", "");
-						}
-						$data['jet_sign'] = 'евро';
-						$data['jet_sign_second'] = '';
-						$jet_min_250 = 125.00;
-						break;
-				}
+			if ($jet_currency_code === 'EUR') {
+				$data['jet_sign'] = 'евро';
+				$jet_min_250 = 125.00;
 				
 				$_minprice = $this->config->get('mt_jet_credit_price');
 				if ($jet_price >= $_minprice) {
@@ -828,12 +690,7 @@ $data['products'] = array();
 				</div>
 				<?php if ($jet_vnoska == 1) { ?>
 				<div class="jet_wide_button_text">
-					<?php if ($jet_sign_second == '') { ?>
 						<span id="jet_vnoski_text"></span> x <span id="jet_vnoska"></span> <?php echo $jet_sign; ?>
-					<?php } else { ?>
-						<span id="jet_vnoski_text"></span> x <span id="jet_vnoska"></span> <?php echo $jet_sign; ?>
-						<span class="jet_wide_button_text_second">(<span id="jet_vnoska_second"></span> <?php echo $jet_sign_second; ?>)</span>
-					<?php } ?>
 				</div>
 				<?php } ?>
 			</button>
@@ -845,12 +702,7 @@ $data['products'] = array();
 				</div>
 				<?php if ($jet_vnoska == 1) { ?>
 				<div class="jet_wide_button_text">
-					<?php if ($jet_sign_second == '') { ?>
 						<span id="jet_vnoski_text_card"></span> x <span id="jet_vnoska_card"></span> <?php echo $jet_sign; ?>
-					<?php } else { ?>
-						<span id="jet_vnoski_text_card"></span> x <span id="jet_vnoska_card"></span> <?php echo $jet_sign; ?>
-						<span class="jet_wide_button_text_second">(<span id="jet_vnoska_card_second"></span> <?php echo $jet_sign_second; ?>)</span>
-					<?php } ?>
 				</div>
 				<?php } ?>
 			</button>
@@ -872,14 +724,7 @@ $data['products'] = array();
 			<?php if ($jet_vnoska == 1) { ?>
 			<tr>
 				<td class="jet_button_table">
-					<?php if ($jet_sign_second == '') { ?>
 						<p><span id="jet_vnoski_text"></span> x <span id="jet_vnoska"></span> <?php echo $jet_sign; ?></p>
-					<?php } else { ?>
-						<p>
-							<span id="jet_vnoski_text"></span> x <span id="jet_vnoska"></span> <?php echo $jet_sign; ?><br />
-							<span style="font-size:75%;font-weight:400;">(<span id="jet_vnoska_second"></span> <?php echo $jet_sign_second; ?>)</span>
-						</p>
-					<?php } ?>
 				</td>
 			</tr>
 			<?php } ?>
@@ -900,14 +745,7 @@ $data['products'] = array();
 			<?php if ($jet_vnoska == 1) { ?>
 			<tr>
 				<td class="jet_button_table">
-					<?php if ($jet_sign_second == '') { ?>
 						<p><span id="jet_vnoski_text_card"></span> x <span id="jet_vnoska_card"></span> <?php echo $jet_sign; ?></p>
-					<?php } else { ?>
-						<p>
-							<span id="jet_vnoski_text_card"></span> x <span id="jet_vnoska_card"></span> <?php echo $jet_sign; ?><br />
-							<span style="font-size:75%;font-weight:400;">(<span id="jet_vnoska_card_second"></span> <?php echo $jet_sign_second; ?>)</span>
-						</p>
-					<?php } ?>
 				</td>
 			</tr>
 			<?php } ?>
@@ -943,27 +781,13 @@ $data['products'] = array();
 							</div>
 							<div class="jet_row">
 								<div class="jet_column_left">
-									<?php if ($jet_sign_second == '') { ?>
 										Цена на стоките (<?php echo $jet_sign; ?>)
-									<?php } else { ?>
-										Цена на стоките (<?php echo $jet_sign; ?>
-										<span style='font-size:60%;font-weight:400;height:16px;'>&nbsp;/&nbsp;<?php echo $jet_sign_second; ?></span>)
-									<?php } ?>
 								</div>
 								<div class="jet_column_right">
-									<?php if ($jet_eur == 0 || $jet_eur == 3) { ?>
 										<div class="jet_input_text jet_disable">
 											<div><span id="jet_priceall"></span></div>
 											<div></div>
 										</div>
-									<?php } else { ?>
-										<div class="jet_input_text jet_disable">
-											<div><span id="jet_priceall"></span></div>
-											<div>
-												<span>/</span><span id="jet_priceall_second"></span>
-											</div>
-										</div>
-									<?php } ?>
 								</div>
 							</div>
 							<div class="jet_row">
@@ -990,52 +814,24 @@ $data['products'] = array();
 							</div>
 							<div class="jet_row">
 								<div class="jet_column_left">
-									<?php if ($jet_sign_second == '') { ?>
 										Общо кредит (<?php echo $jet_sign; ?>)
-									<?php } else { ?>
-										Общо кредит (<?php echo $jet_sign; ?>
-										<span style='font-size:60%;font-weight:400;height:16px;'>&nbsp;/&nbsp;<?php echo $jet_sign_second; ?></span>)
-									<?php } ?>
 								</div>
 								<div class="jet_column_right">
-									<?php if ($jet_eur == 0 || $jet_eur == 3) { ?>
 										<div class="jet_input_text jet_disable">
 											<div><span id="jet_total_credit_price"></span></div>
 											<div></div>
 										</div>
-									<?php } else { ?>
-										<div class="jet_input_text jet_disable">
-											<div><span id="jet_total_credit_price"></span></div>
-											<div>
-												<span>/</span><span id="jet_total_credit_price_second"></span>
-											</div>
-										</div>
-									<?php } ?>
 								</div>
 							</div>
 							<div class="jet_row">
 								<div class="jet_column_left">
-									<?php if ($jet_sign_second == '') { ?>
 										Месечна вноска (<?php echo $jet_sign; ?>)
-									<?php } else { ?>
-										Месечна вноска (<?php echo $jet_sign; ?>
-										<span style='font-size:60%;font-weight:400;height:16px;'>&nbsp;/&nbsp;<?php echo $jet_sign_second; ?></span>)
-									<?php } ?>
 								</div>
 								<div class="jet_column_right">
-									<?php if ($jet_eur == 0 || $jet_eur == 3) { ?>
 										<div class="jet_input_text jet_disable">
 											<div><span id="jet_vnoska_popup"></span></div>
 											<div></div>
 										</div>
-									<?php } else { ?>
-										<div class="jet_input_text jet_disable">
-											<div><span id="jet_vnoska_popup"></span></div>
-											<div>
-												<span>/</span><span id="jet_vnoska_popup_second"></span>
-											</div>
-										</div>
-									<?php } ?>
 								</div>
 							</div>
 							<div class="jet_row">
@@ -1062,27 +858,13 @@ $data['products'] = array();
 							</div>
 							<div class="jet_row">
 								<div class="jet_column_left">
-									<?php if ($jet_sign_second == '') { ?>
 										Общо плащания (<?php echo $jet_sign; ?>)
-									<?php } else { ?>
-										Общо плащания (<?php echo $jet_sign; ?>
-										<span style='font-size:60%;font-weight:400;height:16px;'>&nbsp;/&nbsp;<?php echo $jet_sign_second; ?></span>)
-									<?php } ?>
 								</div>
 								<div class="jet_column_right">
-									<?php if ($jet_eur == 0 || $jet_eur == 3) { ?>
 										<div class="jet_input_text jet_disable">
 											<div><span id="jet_obshto"></span></div>
 											<div></div>
 										</div>
-									<?php } else { ?>
-										<div class="jet_input_text jet_disable">
-											<div><span id="jet_obshto"></span></div>
-											<div>
-												<span>/</span><span id="jet_obshto_second"></span>
-											</div>
-										</div>
-									<?php } ?>
 								</div>
 							</div>
 							<div class="jet_hr"></div>

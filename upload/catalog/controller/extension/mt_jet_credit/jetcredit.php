@@ -3,7 +3,7 @@ class ControllerExtensionMtJetCreditJetCredit extends Controller {
 
 	const JETCREDIT_FINANCIAL_MAX_ITERATIONS = 128;
 	const JETCREDIT_FINANCIAL_PRECISION = 1.0e-08;
-	const JET_MIN_250 = 250.00;
+
 	const JET_MIN_250_EUR = 125.00;
 
 	public function createSchema() {
@@ -95,6 +95,11 @@ class ControllerExtensionMtJetCreditJetCredit extends Controller {
 	}
 
 	public function jet_check() {
+		if (!isset($this->session->data['currency']) || $this->session->data['currency'] !== 'EUR') {
+			$this->response->addHeader('Content-Type: application/json');
+			$this->response->setOutput(json_encode(array('success' => 0, 'error' => array('warning' => 'JetCredit е наличен само в евро.'))));
+			return;
+		}
 		$json = array();
 		$this->load->model('catalog/product');
 		$product_info = $this->model_catalog_product->getProduct($this->request->post['product_id']);
@@ -125,6 +130,11 @@ class ControllerExtensionMtJetCreditJetCredit extends Controller {
 	}
 
 	public function jet_calculate() {
+		if (!isset($this->session->data['currency']) || $this->session->data['currency'] !== 'EUR') {
+			$this->response->addHeader('Content-Type: application/json');
+			$this->response->setOutput(json_encode(array('success' => 'unsuccess')));
+			return;
+		}
 		$json = [];
 		if (isset($this->request->post['jet_priceall'])) {
 			$jet_priceall = (float) filter_var($this->request->post['jet_priceall'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
@@ -182,26 +192,7 @@ class ControllerExtensionMtJetCreditJetCredit extends Controller {
 			$jet_products_vr = "";
 		}
 
-		$jet_eur = (int) $this->config->get( 'mt_jet_credit_eur' );
-		$jet_min_250 = self::JET_MIN_250;
-		$jet_currency_code = $this->session->data['currency'];
-
-		switch ($jet_eur) {
-			case 0:
-				break;
-			case 1:
-				if ($jet_currency_code == "EUR") {
-					$jet_priceall = number_format($jet_priceall * 1.95583, 2, ".", "");
-				}
-				break;
-			case 2:
-			case 3:
-				if ($jet_currency_code == "BGN") {
-					$jet_priceall = number_format($jet_priceall / 1.95583, 2, ".", "");
-				}
-				$jet_min_250 = self::JET_MIN_250_EUR;
-				break;
-		}
+		$jet_min_250 = self::JET_MIN_250_EUR;
 
 		$jet_total_credit_price = (float)$jet_priceall - (float)$jet_parva;
 
@@ -229,71 +220,30 @@ class ControllerExtensionMtJetCreditJetCredit extends Controller {
 		$jet_gpr_card = (pow((1 + $jet_gprm_card / 12), 12) - 1) * 100;
 		$jet_obshto_card = $jet_vnoska_card * $jet_vnoski;
 
-		$jet_vnoska_second = 0;
-		$jet_vnoska_card_second = 0;
-		$jet_priceall_second = $jet_priceall;
-		$jet_total_credit_price_second = $jet_total_credit_price;
-		$jet_obshto_second = $jet_obshto;
-		$jet_obshto_card_second = $jet_obshto_card;
-		switch ($jet_eur) {
-			case 0:
-				$jet_vnoska_second = 0;
-				$jet_vnoska_card_second = 0;
-				$jet_priceall_second = $jet_priceall;
-				$jet_total_credit_price_second = $jet_total_credit_price;
-				$jet_obshto_second = $jet_obshto;
-				$jet_obshto_card_second = $jet_obshto_card;
-				break;
-			case 1:
-				$jet_vnoska_second = number_format($jet_vnoska / 1.95583, 2, ".", "");
-				$jet_vnoska_card_second = number_format($jet_vnoska_card / 1.95583, 2, ".", "");
-				$jet_priceall_second = number_format($jet_priceall / 1.95583, 2, ".", "");
-				$jet_total_credit_price_second = number_format($jet_total_credit_price_second / 1.95583, 2, ".", "");
-				$jet_obshto_second = number_format($jet_obshto_second / 1.95583, 2, ".", "");
-				$jet_obshto_card_second = number_format($jet_obshto_card_second / 1.95583, 2, ".", "");
-				break;
-			case 2:
-				$jet_vnoska_second = number_format($jet_vnoska * 1.95583, 2, ".", "");
-				$jet_vnoska_card_second = number_format($jet_vnoska_card * 1.95583, 2, ".", "");
-				$jet_priceall_second = number_format($jet_priceall * 1.95583, 2, ".", "");
-				$jet_total_credit_price_second = number_format($jet_total_credit_price_second * 1.95583, 2, ".", "");
-				$jet_obshto_second = number_format($jet_obshto_second * 1.95583, 2, ".", "");
-				$jet_obshto_card_second = number_format($jet_obshto_card_second * 1.95583, 2, ".", "");
-				break;
-			case 3:
-				$jet_vnoska_second = 0;
-				$jet_vnoska_card_second = 0;
-				$jet_priceall_second = $jet_priceall;
-				$jet_total_credit_price_second = $jet_total_credit_price;
-				$jet_obshto_second = $jet_obshto;
-				$jet_obshto_card_second = $jet_obshto_card;
-				break;
-		}
 
 		$json['success'] = 'success';
 		$json['jet_show_button'] = $jet_show_button;
 		$json['jet_vnoska'] = number_format($jet_vnoska, 2, ".", "");
-		$json['jet_vnoska_second'] = number_format($jet_vnoska_second, 2, ".", "");
 		$json['jet_priceall'] = number_format($jet_priceall, 2, ".", "");
-		$json['jet_priceall_second'] = number_format($jet_priceall_second, 2, ".", "");
 		$json['jet_total_credit_price'] = number_format($jet_total_credit_price, 2, ".", "");
-		$json['jet_total_credit_price_second'] = number_format($jet_total_credit_price_second, 2, ".", "");
 		$json['jet_gpr'] = number_format($jet_gpr, 2, ".", "");
 		$json['jet_glp'] = number_format($jet_glp, 2, ".", "");
 		$json['jet_obshto'] = number_format($jet_obshto, 2, ".", "");
-		$json['jet_obshto_second'] = number_format($jet_obshto_second, 2, ".", "");
 		$json['jet_vnoska_card'] = number_format($jet_vnoska_card, 2, ".", "");
-		$json['jet_vnoska_card_second'] = number_format($jet_vnoska_card_second, 2, ".", "");
 		$json['jet_gpr_card'] = number_format($jet_gpr_card, 2, ".", "");
 		$json['jet_glp_card'] = number_format($jet_glp_card, 2, ".", "");
 		$json['jet_obshto_card'] = number_format($jet_obshto_card, 2, ".", "");
-		$json['jet_obshto_card_second'] = number_format($jet_obshto_card_second, 2, ".", "");
 
 		$this->response->addHeader('Content-Type: application/json');
 		$this->response->setOutput(json_encode($json));
 	}
 
 	public function jet_send() {
+		if (!isset($this->session->data['currency']) || $this->session->data['currency'] !== 'EUR') {
+			$this->response->addHeader('Content-Type: application/json');
+			$this->response->setOutput(json_encode(array('success' => 'unsuccess')));
+			return;
+		}
 		if(!empty((string)$this->request->post['jet_lname'])) die();
 
 		$json = [];
@@ -420,22 +370,7 @@ class ControllerExtensionMtJetCreditJetCredit extends Controller {
 
 		$product_p_txt = $jet_priceall / $jet_quantity;
 
-		$jet_eur = (int)$this->config->get('mt_jet_credit_eur');
-		$jet_sign = 'лева';
-		switch ($jet_eur) {
-			case 0:
-				$jet_sign = 'лева';
-				break;
-			case 1:
-				$jet_sign = 'лева';
-				break;
-			case 2:
-				$jet_sign = 'евро';
-				break;
-			case 3:
-				$jet_sign = 'евро';
-				break;
-		}
+		$jet_sign = 'евро';
 
 		$body = "Данни за потребителя:\r\n";
 
@@ -663,6 +598,11 @@ class ControllerExtensionMtJetCreditJetCredit extends Controller {
 	}
 
 	public function jet_calculate_cart() {
+		if (!isset($this->session->data['currency']) || $this->session->data['currency'] !== 'EUR') {
+			$this->response->addHeader('Content-Type: application/json');
+			$this->response->setOutput(json_encode(array('success' => 'unsuccess')));
+			return;
+		}
 		$json = [];
 		if (isset($this->request->post['jet_priceall'])) {
 			$jet_priceall = filter_var($this->request->post['jet_priceall'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
@@ -715,26 +655,7 @@ class ControllerExtensionMtJetCreditJetCredit extends Controller {
 			$jet_egn = "";
 		}
 
-		$jet_eur = (int)$this->config->get('mt_jet_credit_eur');
-		$jet_min_250 = self::JET_MIN_250;
-		$jet_currency_code = $this->session->data['currency'];
-
-		switch ($jet_eur) {
-			case 0:
-				break;
-			case 1:
-				if ($jet_currency_code == "EUR") {
-					$jet_priceall = number_format($jet_priceall * 1.95583, 2, ".", "");
-				}
-				break;
-			case 2:
-			case 3:
-				if ($jet_currency_code == "BGN") {
-					$jet_priceall = number_format($jet_priceall / 1.95583, 2, ".", "");
-				}
-				$jet_min_250 = self::JET_MIN_250_EUR;
-				break;
-		}
+		$jet_min_250 = self::JET_MIN_250_EUR;
 
 		$jet_total_credit_price = $jet_priceall - $jet_parva;
 
@@ -758,70 +679,29 @@ class ControllerExtensionMtJetCreditJetCredit extends Controller {
 		$jet_gpr_card = (pow((1 + $jet_gprm_card / 12), 12) - 1) * 100;
 		$jet_obshto_card = $jet_vnoska_card * $jet_vnoski;
 
-		$jet_vnoska_second = 0;
-		$jet_vnoska_card_second = 0;
-		$jet_priceall_second = $jet_priceall;
-		$jet_total_credit_price_second = $jet_total_credit_price;
-		$jet_obshto_second = $jet_obshto;
-		$jet_obshto_card_second = $jet_obshto_card;
-		switch ($jet_eur) {
-			case 0:
-				$jet_vnoska_second = 0;
-				$jet_vnoska_card_second = 0;
-				$jet_priceall_second = $jet_priceall;
-				$jet_total_credit_price_second = $jet_total_credit_price;
-				$jet_obshto_second = $jet_obshto;
-				$jet_obshto_card_second = $jet_obshto_card;
-				break;
-			case 1:
-				$jet_vnoska_second = number_format($jet_vnoska / 1.95583, 2, ".", "");
-				$jet_vnoska_card_second = number_format($jet_vnoska_card / 1.95583, 2, ".", "");
-				$jet_priceall_second = number_format($jet_priceall / 1.95583, 2, ".", "");
-				$jet_total_credit_price_second = number_format($jet_total_credit_price_second / 1.95583, 2, ".", "");
-				$jet_obshto_second = number_format($jet_obshto_second / 1.95583, 2, ".", "");
-				$jet_obshto_card_second = number_format($jet_obshto_card_second / 1.95583, 2, ".", "");
-				break;
-			case 2:
-				$jet_vnoska_second = number_format($jet_vnoska * 1.95583, 2, ".", "");
-				$jet_vnoska_card_second = number_format($jet_vnoska_card * 1.95583, 2, ".", "");
-				$jet_priceall_second = number_format($jet_priceall * 1.95583, 2, ".", "");
-				$jet_total_credit_price_second = number_format($jet_total_credit_price_second * 1.95583, 2, ".", "");
-				$jet_obshto_second = number_format($jet_obshto_second * 1.95583, 2, ".", "");
-				$jet_obshto_card_second = number_format($jet_obshto_card_second * 1.95583, 2, ".", "");
-				break;
-			case 3:
-				$jet_vnoska_second = 0;
-				$jet_vnoska_card_second = 0;
-				$jet_priceall_second = $jet_priceall;
-				$jet_total_credit_price_second = $jet_total_credit_price;
-				$jet_obshto_second = $jet_obshto;
-				$jet_obshto_card_second = $jet_obshto_card;
-				break;
-		}
 
 		$json['success'] = 'success';
 		$json['jet_vnoska'] = number_format($jet_vnoska, 2, ".", "");
-		$json['jet_vnoska_second'] = number_format($jet_vnoska_second, 2, ".", "");
 		$json['jet_priceall'] = number_format($jet_priceall, 2, ".", "");
-		$json['jet_priceall_second'] = number_format($jet_priceall_second, 2, ".", "");
 		$json['jet_total_credit_price'] = number_format($jet_total_credit_price, 2, ".", "");
-		$json['jet_total_credit_price_second'] = number_format($jet_total_credit_price_second, 2, ".", "");
 		$json['jet_gpr'] = number_format($jet_gpr, 2, ".", "");
 		$json['jet_glp'] = number_format($jet_glp, 2, ".", "");
 		$json['jet_obshto'] = number_format($jet_obshto, 2, ".", "");
-		$json['jet_obshto_second'] = number_format($jet_obshto_second, 2, ".", "");
 		$json['jet_vnoska_card'] = number_format($jet_vnoska_card, 2, ".", "");
-		$json['jet_vnoska_card_second'] = number_format($jet_vnoska_card_second, 2, ".", "");
 		$json['jet_gpr_card'] = number_format($jet_gpr_card, 2, ".", "");
 		$json['jet_glp_card'] = number_format($jet_glp_card, 2, ".", "");
 		$json['jet_obshto_card'] = number_format($jet_obshto_card, 2, ".", "");
-		$json['jet_obshto_card_second'] = number_format($jet_obshto_card_second, 2, ".", "");
 
 		$this->response->addHeader('Content-Type: application/json');
 		$this->response->setOutput(json_encode($json));
 	}
 
 	public function jet_send_cart() {
+		if (!isset($this->session->data['currency']) || $this->session->data['currency'] !== 'EUR') {
+			$this->response->addHeader('Content-Type: application/json');
+			$this->response->setOutput(json_encode(array('success' => 'unsuccess')));
+			return;
+		}
 		if(!empty((string)$this->request->post['jet_lname'])) die();
 		
 		$json = [];
@@ -927,22 +807,7 @@ class ControllerExtensionMtJetCreditJetCredit extends Controller {
 			$payment_code = 'jet';
 		}
 
-		$jet_eur = (int)$this->config->get('mt_jet_credit_eur');
-		$jet_sign = 'лева';
-		switch ($jet_eur) {
-			case 0:
-				$jet_sign = 'лева';
-				break;
-			case 1:
-				$jet_sign = 'лева';
-				break;
-			case 2:
-				$jet_sign = 'евро';
-				break;
-			case 3:
-				$jet_sign = 'евро';
-				break;
-		}
+		$jet_sign = 'евро';
 
 		$body = "Данни за потребителя:\r\n";
 

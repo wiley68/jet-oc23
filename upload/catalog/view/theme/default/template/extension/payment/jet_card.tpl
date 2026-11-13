@@ -294,28 +294,14 @@ input[type="checkbox"].jet_uslovia{
 	</div>
 	<div class="jet_row">
 		<div class="jet_column_left">
-			<?php if (empty($jet_card_sign_second)) { ?>
 				Цена на стоките (<?php echo $jet_card_sign; ?>)
-			<?php } else { ?>
-				Цена на стоките (<?php echo $jet_card_sign; ?> 
-				<span style='font-size:70%;font-weight:400;height:14px;'>&nbsp;/&nbsp;<?php echo $jet_card_sign_second; ?></span>)
-			<?php } ?>
 		</div>
 		<div class="jet_column_right">
 			<input type="hidden" id="jet_card_priceall_input" name="jet_card_priceall_input" />
-			<?php if ($jet_card_eur == 0 || $jet_card_eur == 3) { ?>
 				<div class="jet_input_text jet_disable">
 					<div><span id="jet_card_priceall"></span></div>
 					<div></div>
 				</div>
-			<?php } else { ?>
-				<div class="jet_input_text jet_disable">
-					<div><span id="jet_card_priceall"></span></div>
-					<div>
-						<span>/</span><span id="jet_card_priceall_second"></span>
-					</div>
-				</div>
-			<?php } ?>
 		</div>
 	</div>
 
@@ -345,55 +331,27 @@ input[type="checkbox"].jet_uslovia{
 
 	<div class="jet_row">
 		<div class="jet_column_left">
-			<?php if (empty($jet_card_sign_second)) { ?>
 				Общо кредит (<?php echo $jet_card_sign; ?>)
-			<?php } else { ?>
-				Общо кредит (<?php echo $jet_card_sign; ?>
-				<span style='font-size:70%;font-weight:400;height:14px;'>&nbsp;/&nbsp;<?php echo $jet_card_sign_second; ?></span>)
-			<?php } ?>
 		</div>
 		<div class="jet_column_right">
 			<input type="hidden" id="jet_card_total_credit_price_input" name="jet_card_total_credit_price_input" />
-			<?php if ($jet_card_eur == 0 || $jet_card_eur == 3) { ?>
 				<div class="jet_input_text jet_disable">
 					<div><span id="jet_card_total_credit_price"></span></div>
 					<div></div>
 				</div>
-			<?php } else { ?>
-				<div class="jet_input_text jet_disable">
-					<div><span id="jet_card_total_credit_price"></span></div>
-					<div>
-						<span>/</span><span id="jet_card_total_credit_price_second"></span>
-					</div>
-				</div>
-			<?php } ?>
 		</div>
 	</div>
 
 	<div class="jet_row">
 		<div class="jet_column_left">
-			<?php if (empty($jet_card_sign_second)) { ?>
 				Месечна вноска (<?php echo $jet_card_sign; ?>)
-			<?php } else { ?>
-				Месечна вноска (<?php echo $jet_card_sign; ?>
-				<span style='font-size:70%;font-weight:400;height:14px;'>&nbsp;/&nbsp;<?php echo $jet_card_sign_second; ?></span>)
-			<?php } ?>
 		</div>
 		<div class="jet_column_right">
 			<input type="hidden" id="jet_card_vnoska_input" name="jet_card_vnoska_input" />
-			<?php if ($jet_card_eur == 0 || $jet_card_eur == 3) { ?>
 				<div class="jet_input_text jet_disable">
 					<div><span id="jet_card_vnoska"></span></div>
 					<div></div>
 				</div>
-			<?php } else { ?>
-				<div class="jet_input_text jet_disable">
-					<div><span id="jet_card_vnoska"></span></div>
-					<div>
-						<span>/</span><span id="jet_card_vnoska_second"></span>
-					</div>
-				</div>
-			<?php } ?>
 		</div>
 	</div>
 
@@ -425,28 +383,14 @@ input[type="checkbox"].jet_uslovia{
 
 	<div class="jet_row">
 		<div class="jet_column_left">
-			<?php if (empty($jet_card_sign_second)) { ?>
 				Общо плащания (<?php echo $jet_card_sign; ?>)
-			<?php } else { ?>
-				Общо плащания (<?php echo $jet_card_sign; ?>
-				<span style='font-size:70%;font-weight:400;height:14px;'>&nbsp;/&nbsp;<?php echo $jet_card_sign_second; ?></span>)
-			<?php } ?>
 		</div>
 		<div class="jet_column_right">
 			<input type="hidden" id="jet_card_obshto_input" name="jet_card_obshto_input" />
-			<?php if ($jet_card_eur == 0 || $jet_card_eur == 3) { ?>
 				<div class="jet_input_text jet_disable">
 					<div><span id="jet_card_obshto"></span></div>
 					<div></div>
 				</div>
-			<?php } else { ?>
-				<div class="jet_input_text jet_disable">
-					<div><span id="jet_card_obshto"></span></div>
-					<div>
-						<span>/</span><span id="jet_card_obshto_second"></span>
-					</div>
-				</div>
-			<?php } ?>
 		</div>
 	</div>
 
@@ -553,18 +497,13 @@ input[type="checkbox"].jet_uslovia{
 						if (json.success === 'success') {
 							if ($('#jet_card_vnoska').length !== 0) {
 								$('#jet_card_vnoska').text(json.jet_vnoska_card);
-								if ($('#jet_card_vnoska_second').length !== 0) $('#jet_card_vnoska_second').text(json.jet_vnoska_card_second);
 								$('#jet_card_vnoski_text').text(parseInt($('#jet_card_vnoski').val()));
 								$('#jet_card_priceall').text(json.jet_priceall);
-								if ($('#jet_card_priceall_second').length !== 0) $('#jet_card_priceall_second').text(json.jet_priceall_second);
 								$('#jet_card_total_credit_price').text(json.jet_total_credit_price);
-								if ($('#jet_card_total_credit_price_second').length !== 0) $('#jet_card_total_credit_price_second').text(json.jet_total_credit_price_second);
 								$('#jet_card_vnoska_popup').text(json.jet_vnoska_card);
-								if ($('#jet_card_vnoska_popup_second').length !== 0) $('#jet_card_vnoska_popup_second').text(json.jet_vnoska_card_second);
 								$('#jet_card_gpr').text(json.jet_gpr_card);
 								$('#jet_card_glp').text(json.jet_glp_card);
 								$('#jet_card_obshto').text(json.jet_obshto_card);
-								if ($('#jet_card_obshto_second').length !== 0) $('#jet_card_obshto_second').text(json.jet_obshto_card_second);
 							}
 						}
 					},
@@ -676,7 +615,7 @@ input[type="checkbox"].jet_uslovia{
 					$('#button-confirm').prop('disabled', false);
 				} else {
 					$("#jet_card_alert_overlay").addClass("show");
-					jetShowCustomAlert('Месечната вноска трябва да надхвърля сумата от 20 лв.!', false);
+					jetShowCustomAlert('Месечната вноска трябва да надхвърля сумата от 20 евро!', false);
 					$('#jet_card_uslovia').prop('checked', false);
 					$('#jet_card_uslovia1').prop('checked', false);
 				}

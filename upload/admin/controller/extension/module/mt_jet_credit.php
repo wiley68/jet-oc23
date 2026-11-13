@@ -174,11 +174,6 @@ class ControllerExtensionModuleMtJetCredit extends Controller {
 		} else {
 			$data['mt_jet_credit_count'] = $this->config->get('mt_jet_credit_count') == "" ? 1 : $this->config->get('mt_jet_credit_count');
 		}
-		if (isset($this->request->post['mt_jet_credit_eur'])) {
-			$data['mt_jet_credit_eur'] = $this->request->post['mt_jet_credit_eur'];
-		} else {
-			$data['mt_jet_credit_eur'] = $this->config->get('mt_jet_credit_eur') == "" ? 2 : $this->config->get('mt_jet_credit_eur');
-		}
 		if (isset($this->request->post['mt_jet_credit_price'])) {
 			$data['mt_jet_credit_price'] = $this->request->post['mt_jet_credit_price'];
 		} else {
@@ -204,7 +199,6 @@ class ControllerExtensionModuleMtJetCredit extends Controller {
 			'mt_jet_credit_cart_show'     => 1,
 			'mt_jet_credit_status_card'   => 1,
 			'mt_jet_credit_vnoska'        => 1,
-			'mt_jet_credit_eur'           => 2,
 			'mt_jet_credit_button_type'   => 'standard',
 			'mt_jet_credit_button_scheme' => 0,
 			'mt_jet_credit_btn_text'      => 'Купи на изплащане с',
