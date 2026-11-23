@@ -1,0 +1,165 @@
+{
+    "finance": {
+        "cart_standard": {
+            "success": "success",
+            "jet_vnoska": "43.20",
+            "jet_priceall": "450.00",
+            "jet_total_credit_price": "400.00",
+            "jet_gpr": "18.50",
+            "jet_glp": "17.09",
+            "jet_obshto": "432.00",
+            "jet_vnoska_card": "43.60",
+            "jet_gpr_card": "20.96",
+            "jet_glp_card": "19.18",
+            "jet_obshto_card": "436.00"
+        },
+        "cart_exact_zero_at_threshold": {
+            "success": "success",
+            "jet_vnoska": "33.33",
+            "jet_priceall": "450.00",
+            "jet_total_credit_price": "400.00",
+            "jet_gpr": "0.00",
+            "jet_glp": "0.00",
+            "jet_obshto": "400.00",
+            "jet_vnoska_card": "33.33",
+            "jet_gpr_card": "0.00",
+            "jet_glp_card": "0.00",
+            "jet_obshto_card": "400.00"
+        },
+        "cart_exact_under_higher_priority_threshold": {
+            "success": "success",
+            "jet_vnoska": "35.33",
+            "jet_priceall": "450.00",
+            "jet_total_credit_price": "399.99",
+            "jet_gpr": "11.46",
+            "jet_glp": "10.90",
+            "jet_obshto": "423.99",
+            "jet_vnoska_card": "35.33",
+            "jet_gpr_card": "11.46",
+            "jet_glp_card": "10.90",
+            "jet_obshto_card": "423.99"
+        },
+        "cart_global_below_exact_threshold": {
+            "success": "success",
+            "jet_vnoska": "33.02",
+            "jet_priceall": "450.00",
+            "jet_total_credit_price": "349.99",
+            "jet_gpr": "26.24",
+            "jet_glp": "23.53",
+            "jet_obshto": "396.19",
+            "jet_vnoska_card": "33.02",
+            "jet_gpr_card": "26.24",
+            "jet_glp_card": "23.53",
+            "jet_obshto_card": "396.19"
+        },
+        "cart_global_after_exact_expiry": {
+            "success": "success",
+            "jet_vnoska": "37.73",
+            "jet_priceall": "450.00",
+            "jet_total_credit_price": "400.00",
+            "jet_gpr": "26.24",
+            "jet_glp": "23.53",
+            "jet_obshto": "452.80",
+            "jet_vnoska_card": "37.73",
+            "jet_gpr_card": "26.24",
+            "jet_glp_card": "23.53",
+            "jet_obshto_card": "452.80"
+        },
+        "cart_global_before_exact_start": {
+            "success": "success",
+            "jet_vnoska": "37.73",
+            "jet_priceall": "450.00",
+            "jet_total_credit_price": "400.00",
+            "jet_gpr": "26.24",
+            "jet_glp": "23.53",
+            "jet_obshto": "452.80",
+            "jet_vnoska_card": "37.73",
+            "jet_gpr_card": "26.24",
+            "jet_glp_card": "23.53",
+            "jet_obshto_card": "452.80"
+        },
+        "cart_legacy_combined_id": {
+            "success": "success",
+            "jet_vnoska": "37.73",
+            "jet_priceall": "450.00",
+            "jet_total_credit_price": "400.00",
+            "jet_gpr": "26.24",
+            "jet_glp": "23.53",
+            "jet_obshto": "452.80",
+            "jet_vnoska_card": "37.73",
+            "jet_gpr_card": "26.24",
+            "jet_glp_card": "23.53",
+            "jet_obshto_card": "452.80"
+        },
+        "cart_legacy_ignores_prohibition": {
+            "success": "success",
+            "jet_vnoska": "36.53",
+            "jet_priceall": "450.00",
+            "jet_total_credit_price": "400.00",
+            "jet_gpr": "18.71",
+            "jet_glp": "17.27",
+            "jet_obshto": "438.40",
+            "jet_vnoska_card": "36.93",
+            "jet_gpr_card": "21.19",
+            "jet_glp_card": "19.37",
+            "jet_obshto_card": "443.20"
+        },
+        "product_prohibition_flag": {
+            "success": "success",
+            "jet_show_button": false,
+            "jet_vnoska": "36.53",
+            "jet_priceall": "450.00",
+            "jet_total_credit_price": "400.00",
+            "jet_gpr": "18.71",
+            "jet_glp": "17.27",
+            "jet_obshto": "438.40",
+            "jet_vnoska_card": "36.93",
+            "jet_gpr_card": "21.19",
+            "jet_glp_card": "19.37",
+            "jet_obshto_card": "443.20"
+        },
+        "product_zero_at_threshold_with_option": {
+            "success": "success",
+            "jet_show_button": true,
+            "jet_vnoska": "33.33",
+            "jet_priceall": "450.00",
+            "jet_total_credit_price": "400.00",
+            "jet_gpr": "0.00",
+            "jet_glp": "0.00",
+            "jet_obshto": "400.00",
+            "jet_vnoska_card": "33.33",
+            "jet_gpr_card": "0.00",
+            "jet_glp_card": "0.00",
+            "jet_obshto_card": "400.00"
+        },
+        "cart_non_eur": {
+            "success": "unsuccess"
+        }
+    },
+    "mail": {
+        "cart_jet": [
+            "shop@example.test",
+            "JET-FIXTURE, онлайн заявка по поръчка 42",
+            "Данни за потребителя:\r\nСобствено име: Test;\r\nФамилия: Buyer;\r\nЕГН: 0000000000;\r\nТелефон за връзка: 0000000000;\r\nИмейл адрес: buyer@example.test;\r\n\r\nДанни за стоката:\r\nТип стока: Fixtures;\r\nМарка: (101) Test product - Blue;\r\nЕдинична цена с ДДС: 225.00;\r\nБрой стоки: 2;\r\nОбща сума с ДДС: 450.00;\r\n\r\nДанни за кредита:\r\nРазмер на кредита: 400.00;\r\nСрок на изплащане в месеца: 10;\r\nМесечна вноска: 43.20;\r\nПървоначална вноска: 50.00;\r\n",
+            "MIME-Version: 1.0\r\nContent-type: text/plain; charset=utf-8\r\nFrom: JET-FIXTURE <shop@example.test>\r\nCC: finance@example.test, buyer@example.test\r\n"
+        ],
+        "cart_card": [
+            "shop@example.test",
+            "JET-FIXTURE, онлайн заявка по поръчка 42",
+            "Данни за потребителя:\r\nСобствено име: Test;\r\nФамилия: Buyer;\r\nЕГН: 0000000000;\r\nТелефон за връзка: 0000000000;\r\nИмейл адрес: buyer@example.test;\r\n\r\nДанни за стоката:\r\nТип стока: Fixtures;\r\nМарка: (101) Test product - Blue;\r\nЕдинична цена с ДДС: 225.00;\r\nБрой стоки: 2;\r\nОбща сума с ДДС: 450.00;\r\n\r\nТип стока: Кредитна Карта;\r\nМарка: -;\r\nЕдинична цена с ДДС: 0.00;\r\nБрой стоки: 1;\r\nОбща сума с ДДС: 0.00;\r\n\r\nДанни за кредита:\r\nРазмер на кредита: 400.00;\r\nСрок на изплащане в месеца: 10;\r\nМесечна вноска: 43.60;\r\nПървоначална вноска: 50.00;\r\n",
+            "MIME-Version: 1.0\r\nContent-type: text/plain; charset=utf-8\r\nFrom: JET-FIXTURE <shop@example.test>\r\nCC: finance@example.test, buyer@example.test\r\n"
+        ],
+        "checkout_jet": [
+            "shop@example.test",
+            "JET-FIXTURE, онлайн заявка по поръчка 42",
+            "Данни за потребителя:\r\nСобствено име: Test;\r\nФамилия: Buyer;\r\nЕГН: 0000000000;\r\nТелефон за връзка: 0000000000;\r\nИмейл адрес: buyer@example.test;\r\n\r\nДанни за стоката:\r\nТип стока: Fixtures;\r\nМарка: (101) Test product - Blue;\r\nЕдинична цена с ДДС: 225.00;\r\nБрой стоки: 2;\r\nОбща сума с ДДС: 450.00;\r\n\r\nДанни за кредита:\r\nРазмер на кредита: 400.00;\r\nСрок на изплащане в месеца: 10;\r\nМесечна вноска: 43.20;\r\nПървоначална вноска: 50.00;\r\n",
+            "MIME-Version: 1.0\r\nContent-type: text/plain; charset=utf-8\r\nFrom: JET-FIXTURE <shop@example.test>\r\nCC: finance@example.test, buyer@example.test\r\n"
+        ],
+        "checkout_card": [
+            "shop@example.test",
+            "JET-FIXTURE, онлайн заявка по поръчка 42",
+            "Данни за потребителя:\r\nСобствено име: Test;\r\nФамилия: Buyer;\r\nЕГН: 0000000000;\r\nТелефон за връзка: 0000000000;\r\nИмейл адрес: buyer@example.test;\r\n\r\nДанни за стоката:\r\nТип стока: Fixtures;\r\nМарка: (101) Test product - Blue;\r\nЕдинична цена с ДДС: 225.00;\r\nБрой стоки: 2;\r\nОбща сума с ДДС: 450.00;\r\n\r\nТип стока: Кредитна Карта;\r\nМарка: -;\r\nЕдинична цена с ДДС: 0.00;\r\nБрой стоки: 1;\r\nОбща сума с ДДС: 0.00;\r\n\r\nДанни за кредита:\r\nРазмер на кредита: 400.00;\r\nСрок на изплащане в месеца: 10;\r\nМесечна вноска: 43.60;\r\nПървоначална вноска: 50.00;\r\n",
+            "MIME-Version: 1.0\r\nContent-type: text/plain; charset=utf-8\r\nFrom: JET-FIXTURE <shop@example.test>\r\nCC: finance@example.test, buyer@example.test\r\n"
+        ]
+    }
+}

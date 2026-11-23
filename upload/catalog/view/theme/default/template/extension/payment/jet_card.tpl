@@ -265,13 +265,10 @@ input[type="checkbox"].jet_uslovia{
 }
 </style>
 
-<input type="hidden" id="jet_card_price" name="jet_card_price" value="<?php echo $jet_card_price; ?>" />
-<input type="hidden" id="jet_card_products" name="jet_card_products" value="<?php echo $jet_card_products; ?>" />
-<input type="hidden" id="jet_card_products_qt" name="jet_card_products_qt" value="<?php echo $jet_card_products_qt; ?>" />
-<input type="hidden" id="jet_card_products_pr" name="jet_card_products_pr" value="<?php echo $jet_card_products_pr; ?>" />
-<input type="hidden" id="jet_card_products_vr" name="jet_card_products_vr" value="<?php echo $jet_card_products_vr; ?>" />
 
+<div data-jet-checkout="jet_card" data-jet-order="<?php echo $jet_order; ?>">
 <div class="jet_panel">
+	<p class="text-warning" data-jet-information role="status" hidden></p>
 	<div class="jet_row">
 		<div class="jet_column_left">
 			Първоначална вноска (<?php echo $jet_card_sign; ?>)
@@ -281,6 +278,7 @@ input[type="checkbox"].jet_uslovia{
 				class="jet_input_text_active" 
 				type="number" 
 				min="0"
+				step="0.01"
 				id="jet_card_parva" 
 				name="jet_card_parva_input"
 				value="0" 
@@ -315,16 +313,16 @@ input[type="checkbox"].jet_uslovia{
 				name="jet_card_vnoski_input"
 				class="jet_input_text"
 			>
-				<option value="3" <?php if ($jet_card_vnoski == 3) { ?>selected<?php } ?>>3 месеца</option>
-				<option value="6" <?php if ($jet_card_vnoski == 6) { ?>selected<?php } ?>>6 месеца</option>
-				<option value="9" <?php if ($jet_card_vnoski == 9) { ?>selected<?php } ?>>9 месеца</option>
-				<option value="10" <?php if ($jet_card_vnoski == 10) { ?>selected<?php } ?>>10 месеца</option>
-				<option value="12" <?php if ($jet_card_vnoski == 12) { ?>selected<?php } ?>>12 месеца</option>
-				<option value="15" <?php if ($jet_card_vnoski == 15) { ?>selected<?php } ?>>15 месеца</option>
-				<option value="18" <?php if ($jet_card_vnoski == 18) { ?>selected<?php } ?>>18 месеца</option>
-				<option value="24" <?php if ($jet_card_vnoski == 24) { ?>selected<?php } ?>>24 месеца</option>
-				<option value="30" <?php if ($jet_card_vnoski == 30) { ?>selected<?php } ?>>30 месеца</option>
-				<option value="36" <?php if ($jet_card_vnoski == 36) { ?>selected<?php } ?>>36 месеца</option>
+				<option value="3">3 месеца</option>
+				<option value="6">6 месеца</option>
+				<option value="9">9 месеца</option>
+				<option value="10">10 месеца</option>
+				<option value="12">12 месеца</option>
+				<option value="15">15 месеца</option>
+				<option value="18">18 месеца</option>
+				<option value="24">24 месеца</option>
+				<option value="30">30 месеца</option>
+				<option value="36">36 месеца</option>
 			</select>
 		</div>
 	</div>
@@ -453,250 +451,10 @@ input[type="checkbox"].jet_uslovia{
 
 <div class="buttons">
 	<div class="pull-right">
-		<input type="button" <?php if (!$jet_card_status) { ?>disabled<?php } ?> value="<?php echo $button_confirm; ?>" id="button-confirm" class="btn btn-primary" data-loading-text="<?php echo $text_loading; ?>" />
+		<input type="button" disabled value="<?php echo $button_confirm; ?>" id="button-confirm" class="btn btn-primary" data-loading-text="<?php echo $text_loading; ?>" />
 	</div>
 </div>
-
-<script type="text/javascript"><!--
-	jQuery(document).ready(function($) {
-		const debounce = (func, delay) => {
-			let timeoutId;
-			return function(...args) {
-				clearTimeout(timeoutId);
-				timeoutId = setTimeout(() => {
-					func.apply(this, args);
-				}, delay);
-			};
-		}
-			
-		const jetCalculate = () => {
-			const jetCardPriceall = parseFloat($('#jet_card_price').val());
-			jetHideOptions401();
-			jetHideOptions601();
-			if (jetCardPriceall >= 401) {
-				jetShowOptions401();
-			}
-			if (jetCardPriceall >= 601) {
-				jetShowOptions601();
-			}
-			if (parseFloat($('#jet_card_parva').val()) < jetCardPriceall) {
-				const jetFormData = new FormData();
-				jetFormData.append('jet_priceall', jetCardPriceall.toFixed(2));
-				jetFormData.append('jet_parva', parseFloat($('#jet_card_parva').val()).toFixed(2));
-				jetFormData.append('jet_vnoski', parseInt($('#jet_card_vnoski').val()));
-				jetFormData.append('jet_products', $('#jet_card_products').val());
-				jetFormData.append('jet_products_qt', $('#jet_card_products_qt').val());
-				jetFormData.append('jet_products_pr', $('#jet_card_products_pr').val());
-				$.ajax({
-					url: 'index.php?route=extension/mt_jet_credit/jetcredit/jet_calculate_cart',
-					method: 'POST',
-					data: jetFormData,
-					processData: false,
-					contentType: false,
-					success: function(json) {
-						if (json.success === 'success') {
-							if ($('#jet_card_vnoska').length !== 0) {
-								$('#jet_card_vnoska').text(json.jet_vnoska_card);
-								$('#jet_card_vnoski_text').text(parseInt($('#jet_card_vnoski').val()));
-								$('#jet_card_priceall').text(json.jet_priceall);
-								$('#jet_card_total_credit_price').text(json.jet_total_credit_price);
-								$('#jet_card_vnoska_popup').text(json.jet_vnoska_card);
-								$('#jet_card_gpr').text(json.jet_gpr_card);
-								$('#jet_card_glp').text(json.jet_glp_card);
-								$('#jet_card_obshto').text(json.jet_obshto_card);
-							}
-						}
-					},
-					error: function(error) {
-						console.error('Error:', error);
-					}
-				});
-			} else {
-				$("#jet_card_alert_overlay").addClass("show");
-				jetShowCustomAlert('Първоначалната вноска трябва да бъде по-малка от цената на стоките!', false);
-			}
-		}
-		
-		const jetHideOptions401 = () => {
-			$('#jet_card_vnoski').find('option').each(function() {
-				if ($(this).val() === '15' || $(this).val() === '18' || $(this).val() === '24') {
-					$(this).prop('disabled', true);
-				}
-			});
-		}
-		const jetShowOptions401 = () => {
-			$('#jet_card_vnoski').find('option').each(function() {
-				if ($(this).val() === '15' || $(this).val() === '18' || $(this).val() === '24') {
-					$(this).prop('disabled', false);
-				}
-			});
-		}
-		const jetHideOptions601 = () => {
-			$('#jet_card_vnoski').find('option').each(function() {
-				if ($(this).val() === '30' || $(this).val() === '36') {
-					$(this).prop('disabled', true);
-				}
-			});
-		}
-		const jetShowOptions601 = () => {
-			$('#jet_card_vnoski').find('option').each(function() {
-				if ($(this).val() === '30' || $(this).val() === '36') {
-					$(this).prop('disabled', false);
-				}
-			});
-		}
-		
-		const jetShowCustomAlert = (message, exit) => {
-			const jetAlertBox = $('<div></div>', {
-				id: 'jet_alert_box',
-				css: {
-					position: 'fixed',
-					top: '50%',
-					left: '50%',
-					transform: 'translate(-50%, -50%)',
-					backgroundColor: '#fff',
-					padding: '20px',
-					borderRadius: '5px',
-					boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)',
-					zIndex: '5000001',
-					width: '300px',
-					textAlign: 'center'
-				}
-			});
-			const jetMessageText = $('<p></p>', {
-				text: message,
-				css: {
-					fontFamily: '"Roboto Condensed", sans-serif',
-					color: '#14532d'
-				}
-			});
-			jetAlertBox.append(jetMessageText);
-			const jetCloseButton = $('<button></button>', {
-				text: 'Добре',
-				css: {
-					fontFamily: '"Roboto Condensed", sans-serif',
-					fontWeight: '500',
-					marginTop: '20px',
-					padding: '10px 20px',
-					border: 'none',
-					backgroundColor: '#166534',
-					color: '#fff',
-					borderRadius: '3px',
-					cursor: 'pointer'
-				}
-			});
-			jetCloseButton.on('click', function() {
-				jetAlertBox.remove();
-				if (exit) {
-					window.location.href = window.location.origin;
-				}
-				$('#jet_alert_overlay').removeClass('show');
-			});
-			jetAlertBox.append(jetCloseButton);
-			$('body').append(jetAlertBox);
-		}
-		
-		const handleJetEgnChange = (event) => {
-			if (event.target.id == "jet_card_egn") {
-				const input = event.target.value;
-				const regex = /^[0-9]{0,10}$/;
-				if (!regex.test(input)) {
-					event.target.value = input.slice(0, -1);
-				}
-				jetCalculate();
-				changeBtnJetcredit();
-			}
-		}
-		
-		const changeBtnJetcredit = () => {
-			if ($('#jet_card_uslovia').is(':checked') && $('#jet_card_uslovia1').is(':checked') && $('#jet_card_egn').val() !== '') {
-				let _taxa = parseFloat($('#jet_card_vnoska').text());
-				if (_taxa >= 20) {
-					$('#button-confirm').prop('disabled', false);
-				} else {
-					$("#jet_card_alert_overlay").addClass("show");
-					jetShowCustomAlert('Месечната вноска трябва да надхвърля сумата от 20 евро!', false);
-					$('#jet_card_uslovia').prop('checked', false);
-					$('#jet_card_uslovia1').prop('checked', false);
-				}
-			} else {
-				$('#button-confirm').prop('disabled', true);
-			}
-		}
-		
-		document.addEventListener('input', debounce(handleJetEgnChange, 1000));
-		
-		document.addEventListener('blur', (event) => {
-			if (event.target.id == "jet_card_egn") {
-				jetCalculate();
-				changeBtnJetcredit();
-			}
-		});
-
-		document.addEventListener('click', (event) => {
-			if (event.target.id == 'btn_card_preizcisli') {
-				jetCalculate();
-				changeBtnJetcredit();
-			}
-			if (event.target.id == 'jet_card_uslovia' || event.target.id == 'jet_card_uslovia1') {
-				jetCalculate();
-				changeBtnJetcredit();
-			}
-		});
-
-		document.addEventListener('change', (event) => {
-			if (event.target.id == 'jet_card_vnoski') {
-				jetCalculate();
-				changeBtnJetcredit();
-			}
-		});
-		
-		$('#button-confirm').on('click', function() {
-			$('#button-confirm').prop('disabled', true).button('loading');
-			const jetFormSendData = new FormData();
-			jetFormSendData.append('jet_card_priceall', $('#jet_card_priceall').text());
-			jetFormSendData.append('jet_card_vnoski', $('#jet_card_vnoski').val());
-			jetFormSendData.append('jet_card_vnoska', $('#jet_card_vnoska').text());
-			jetFormSendData.append('jet_card_parva', $('#jet_card_parva').val());
-			jetFormSendData.append('jet_card_total_credit_price', $('#jet_card_total_credit_price').text());
-			jetFormSendData.append('jet_card_obshto', $('#jet_card_obshto').text());
-			jetFormSendData.append('jet_card_gpr', $('#jet_card_gpr').text());
-			jetFormSendData.append('jet_card_glp', $('#jet_card_glp').text());
-			jetFormSendData.append('jet_card_egn', $('#jet_card_egn').val());
-			jetFormSendData.append('jet_card_products', $('#jet_card_products').val());
-			jetFormSendData.append('jet_card_products_qt', $('#jet_card_products_qt').val());
-			jetFormSendData.append('jet_card_products_pr', $('#jet_card_products_pr').val());
-			jetFormSendData.append('jet_card_products_vr', $('#jet_card_products_vr').val());
-			$.ajax({
-				url: 'index.php?route=extension/payment/jet_card/confirm',
-				method: 'POST',
-				data: jetFormSendData,
-				processData: false,
-				contentType: false,
-				beforeSend: function() {
-					$('#button-confirm').button('loading');
-				},
-				complete: function() {
-					$('#button-confirm').button('reset');
-				},
-				success: function(json) {
-					console.log(json);
-					if (json['success'] == 'success') {
-						if (json['redirect']) {
-							location = json['redirect'];
-						}
-					}else{
-						$("#jet_card_alert_overlay").addClass("show");
-						jetShowCustomAlert('Заявката за лизинг не може да бъде изпратена в момента! Моля опитайте по-късно.', false);
-					}
-				},
-				error: function(xhr, ajaxOptions, thrownError) {
-					$('#button-confirm').prop('disabled', false).button('reset');
-					alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
-				}
-			});
-		});
-		
-		jetCalculate();
-	});
---></script>
+</div>
+<link rel="stylesheet" href="catalog/view/theme/default/template/extension/mt_jet_credit/creditjet_information.css">
+<script src="catalog/view/theme/default/template/extension/mt_jet_credit/creditjet_information.js"></script>
+<script src="catalog/view/theme/default/template/extension/mt_jet_credit/creditjet_checkout.js?ver=<?php echo filemtime(DIR_APPLICATION . 'view/theme/default/template/extension/mt_jet_credit/creditjet_checkout.js'); ?>"></script>

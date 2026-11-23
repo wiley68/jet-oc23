@@ -2,30 +2,10 @@
 class ModelExtensionPaymentJetCard extends Model {
 
 	public function getMethod($address, $total) {
-		$query = $this->db->query("SELECT * FROM " . DB_PREFIX . "zone_to_geo_zone WHERE geo_zone_id = '" . (int)$this->config->get('jet_card_geo_zone_id') . "' AND country_id = '" . (int)$address['country_id'] . "' AND (zone_id = '" . (int)$address['zone_id'] . "' OR zone_id = '0')");
-
-		if ($this->config->get('jet_card_total') > 0 && $this->config->get('jet_card_total') > $total) {
-			$status = false;
-		} elseif (!$this->config->get('jet_card_geo_zone_id')) {
-			$status = true;
-		} elseif ($query->num_rows) {
-			$status = true;
-		} else {
-			$status = false;
-		}
-
-		$jet_card_status         = $this->config->get('mt_jet_credit_status');
-		$jet_card_payment_status = $this->config->get('jet_card_status');
-		$jet_card_currency_code  = $this->session->data['currency'];
-
-		if ($jet_card_status == 1 & $jet_card_payment_status == 1 & ($jet_card_currency_code === 'EUR')) {
-			$jet_card_minstojnost = (float)$this->config->get('mt_jet_credit_price');
-			
-			if ($total < $jet_card_minstojnost) {
-				$status = false;
-			}
-		}else{
-			$status = false;
+		$status = $this->isAvailable($address, $total);
+		if ($status) {
+			$offers = $this->load->controller('extension/mt_jet_credit/jetcredit/checkoutAvailability', array('total' => $total));
+			$status = !empty($offers['jet_card']['eligible']);
 		}
 
 		$method_data = array();
@@ -40,5 +20,35 @@ class ModelExtensionPaymentJetCard extends Model {
 		}
 
 		return $method_data;
+	}
+
+	public function isAvailable($address, $total) {
+		$query = $this->db->query("SELECT * FROM " . DB_PREFIX . "zone_to_geo_zone WHERE geo_zone_id = '" . (int)$this->config->get('jet_card_geo_zone_id') . "' AND country_id = '" . (int)$address['country_id'] . "' AND (zone_id = '" . (int)$address['zone_id'] . "' OR zone_id = '0')");
+
+		if ($this->config->get('jet_card_total') > 0 && $this->config->get('jet_card_total') > $total) {
+			$status = false;
+		} elseif (!$this->config->get('jet_card_geo_zone_id')) {
+			$status = true;
+		} elseif ($query->num_rows) {
+			$status = true;
+		} else {
+			$status = false;
+		}
+
+		$jet_card_status         = $this->config->get('mt_jet_credit_status');
+		$jet_card_payment_status = $this->config->get('jet_card_status');
+		$jet_card_currency_code  = isset($this->session->data['currency']) ? $this->session->data['currency'] : null;
+
+		if ($jet_card_status == 1 & $jet_card_payment_status == 1 & ($jet_card_currency_code === 'EUR')) {
+			$jet_card_minstojnost = (float)$this->config->get('mt_jet_credit_price');
+
+			if ($total < $jet_card_minstojnost) {
+				$status = false;
+			}
+		}else{
+			$status = false;
+		}
+
+		return $status;
 	}
 }

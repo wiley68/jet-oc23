@@ -50,25 +50,7 @@ class ModelExtensionMtJetCreditJetcredit extends Model {
 		$jet_purcent_card = (float)$this->config->get('mt_jet_credit_purcent_card');
 		$jet_show_button  = true;
 
-		$product_id = $this->db->escape((string)$jet_product_id);
-		$vnoski     = (int)$jet_vnoski;
-		$total      = (float)$jet_total_credit_price;
-
-		$sql = "
-			SELECT jet_product_percent, jet_product_id, id
-			FROM " . DB_PREFIX . "jet_kop
-			WHERE (jet_product_id = '*' OR jet_product_id = '{$product_id}')
-			  AND FIND_IN_SET({$vnoski}, REPLACE(jet_product_meseci, '_', ','))
-			  AND {$total} >= jet_product_price
-			  AND jet_product_start <= CURDATE()
-			  AND jet_product_end >= CURDATE()
-			ORDER BY
-				CASE WHEN jet_product_id = '{$product_id}' THEN 0 ELSE 1 END,
-				id ASC
-			LIMIT 1
-		";
-
-		$query = $this->db->query($sql);
+		$query = $this->findApplicablePromotion($jet_product_id, $jet_vnoski, $jet_total_credit_price);
 
 		$row = [];
 		if ($query->num_rows > 0) {
@@ -87,5 +69,34 @@ class ModelExtensionMtJetCreditJetcredit extends Model {
 			'jet_purcent' => $jet_purcent,
 			'jet_purcent_card' => $jet_purcent_card
 		];
+	}
+
+	// Return the stored DECIMAL rate before conversion to a calculator float.
+	public function getCartPromotionRate($product_id, $term, $principal) {
+		$query = $this->findApplicablePromotion($product_id, $term, $principal);
+
+		return $query->num_rows > 0 ? (string)$query->row['jet_product_percent'] : null;
+	}
+
+	private function findApplicablePromotion($jet_product_id, $jet_vnoski, $jet_total_credit_price) {
+		$product_id = $this->db->escape((string)$jet_product_id);
+		$vnoski     = (int)$jet_vnoski;
+		$total      = (float)$jet_total_credit_price;
+
+		$sql = "
+			SELECT jet_product_percent, jet_product_id, id
+			FROM " . DB_PREFIX . "jet_kop
+			WHERE (jet_product_id = '*' OR jet_product_id = '{$product_id}')
+			  AND FIND_IN_SET({$vnoski}, REPLACE(jet_product_meseci, '_', ','))
+			  AND {$total} >= jet_product_price
+			  AND jet_product_start <= CURDATE()
+			  AND jet_product_end >= CURDATE()
+			ORDER BY
+				CASE WHEN jet_product_id = '{$product_id}' THEN 0 ELSE 1 END,
+				id ASC
+			LIMIT 1
+		";
+
+		return $this->db->query($sql);
 	}
 }

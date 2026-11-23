@@ -534,3 +534,6 @@ input[type="checkbox"].jet_uslovia {
 	font-weight: 400 !important;
 	color: var(--jet-wide-color-second, #000000) !important;
 }
+[data-jet-cart] [data-jet-channel][hidden] {
+	display: none !important;
+}

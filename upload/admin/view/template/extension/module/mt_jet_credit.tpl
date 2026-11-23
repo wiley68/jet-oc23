@@ -339,6 +339,7 @@
 										<option value=3 <?php if ($mt_jet_credit_vnoski == 3) { echo 'selected'; } ?>>3 месеца</option>
 										<option value=6 <?php if ($mt_jet_credit_vnoski == 6) { echo 'selected'; } ?>>6 месеца</option>
 										<option value=9 <?php if ($mt_jet_credit_vnoski == 9) { echo 'selected'; } ?>>9 месеца</option>
+										<option value=10 <?php if ($mt_jet_credit_vnoski == 10) { echo 'selected'; } ?>>10 месеца</option>
 										<option value=12 <?php if ($mt_jet_credit_vnoski == 12) { echo 'selected'; } ?>>12 месеца</option>
 										<option value=15 <?php if ($mt_jet_credit_vnoski == 15) { echo 'selected'; } ?>>15 месеца</option>
 										<option value=18 <?php if ($mt_jet_credit_vnoski == 18) { echo 'selected'; } ?>>18 месеца</option>

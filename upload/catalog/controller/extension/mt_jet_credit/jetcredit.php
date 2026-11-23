@@ -403,8 +403,19 @@ class ControllerExtensionMtJetCreditJetCredit extends Controller {
 		$body .= "Месечна вноска: $jet_vnoska;\r\n";
 		$body .= "Първоначална вноска: " . number_format(floatval($jet_parva), 2, ".", "") . ";\r\n";
 
-		$jet_count = (int)$this->config->get('mt_jet_credit_count');
-		$this->editSettingValue('mt_jet_credit', 'mt_jet_credit_count', $jet_count + 1);
+		try {
+			require_once DIR_SYSTEM . 'library/jet_submission.php';
+			$jet_count = $this->submissionStore()->reserveReference();
+		} catch (\Exception $error) {
+			$jet_count = null;
+		} catch (\Throwable $error) {
+			$jet_count = null;
+		}
+		if ($jet_count === null) {
+			$this->response->addHeader('Content-Type: application/json');
+			$this->response->setOutput(json_encode(array('success' => 'unsuccess')));
+			return;
+		}
 		$subject_raw = $jet_id . ", онлайн заявка по поръчка $jet_count";
         $subject = $this->jetEncodeSubjectUtf8($subject_raw);
 		
@@ -668,83 +679,365 @@ class ControllerExtensionMtJetCreditJetCredit extends Controller {
 		$jet_purcent = (float) $jet_promo['jet_purcent'];
 		$jet_purcent_card = (float) $jet_promo['jet_purcent_card'];
 
-		$jet_vnoska = (($jet_total_credit_price / $jet_vnoski) * (1 + ($jet_vnoski * $jet_purcent) / 100));
-		$jet_vnoska_card = (($jet_total_credit_price / $jet_vnoski) * (1 + ($jet_vnoski * $jet_purcent_card) / 100));
-		$jet_gprm = $this->RATE($jet_vnoski, $jet_vnoska, -1 * $jet_total_credit_price) * 12;
-		$jet_glp = ($this->RATE($jet_vnoski, $jet_vnoska, -1 * $jet_total_credit_price) * 12) * 100;
-		$jet_gpr = (pow((1 + $jet_gprm / 12), 12) - 1) * 100;
-		$jet_obshto = $jet_vnoska * $jet_vnoski;
-		$jet_gprm_card = $this->RATE($jet_vnoski, $jet_vnoska_card, -1 * $jet_total_credit_price) * 12;
-		$jet_glp_card = ($this->RATE($jet_vnoski, $jet_vnoska_card, -1 * $jet_total_credit_price) * 12) * 100;
-		$jet_gpr_card = (pow((1 + $jet_gprm_card / 12), 12) - 1) * 100;
-		$jet_obshto_card = $jet_vnoska_card * $jet_vnoski;
-
-
+		$values = $this->cartFinancialValues($jet_total_credit_price, $jet_vnoski, $jet_purcent);
 		$json['success'] = 'success';
-		$json['jet_vnoska'] = number_format($jet_vnoska, 2, ".", "");
+		$json['jet_vnoska'] = $values['jet_vnoska'];
 		$json['jet_priceall'] = number_format($jet_priceall, 2, ".", "");
 		$json['jet_total_credit_price'] = number_format($jet_total_credit_price, 2, ".", "");
-		$json['jet_gpr'] = number_format($jet_gpr, 2, ".", "");
-		$json['jet_glp'] = number_format($jet_glp, 2, ".", "");
-		$json['jet_obshto'] = number_format($jet_obshto, 2, ".", "");
-		$json['jet_vnoska_card'] = number_format($jet_vnoska_card, 2, ".", "");
-		$json['jet_gpr_card'] = number_format($jet_gpr_card, 2, ".", "");
-		$json['jet_glp_card'] = number_format($jet_glp_card, 2, ".", "");
-		$json['jet_obshto_card'] = number_format($jet_obshto_card, 2, ".", "");
+		$json += $values;
+		$json += $this->cartFinancialValues($jet_total_credit_price, $jet_vnoski, $jet_purcent_card, '_card');
 
 		$this->response->addHeader('Content-Type: application/json');
 		$this->response->setOutput(json_encode($json));
 	}
 
-	public function jet_send_cart() {
-		if (!isset($this->session->data['currency']) || $this->session->data['currency'] !== 'EUR') {
-			$this->response->addHeader('Content-Type: application/json');
-			$this->response->setOutput(json_encode(array('success' => 'unsuccess')));
+	// Keep jet_calculate_cart() available for legacy callers.
+	public function jet_cart_offer() {
+		$post = $this->request->post;
+		$mode = isset($post['mode']) && is_string($post['mode']) ? $post['mode'] : '';
+		$this->response->addHeader('Content-Type: application/json');
+		$this->response->addHeader('Cache-Control: no-store');
+
+		if ($mode !== 'initial' && $mode !== 'explicit') {
+			$this->response->setOutput(json_encode(array('mode' => $mode, 'reason' => 'invalid_mode')));
 			return;
 		}
-		if(!empty((string)$this->request->post['jet_lname'])) die();
-		
-		$json = [];
-		if (isset($this->request->post['jet_priceall'])) {
-			$jet_priceall = filter_var($this->request->post['jet_priceall'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+
+		require_once DIR_SYSTEM . 'library/jet_cart_eligibility.php';
+		$this->load->model('extension/mt_jet_credit/cart_financing');
+		$adapter = $this->model_extension_mt_jet_credit_cart_financing;
+		$snapshot = $adapter->getSnapshot();
+		$context = hash('sha256', serialize($snapshot));
+		$resolver = $this->financingResolver();
+		$result = array('mode' => $mode, 'context' => $context);
+
+		if ($mode === 'initial') {
+			$result['channels'] = $this->initialFinancingOffers($snapshot, $resolver, true);
 		} else {
-			$jet_priceall = 0.00;
+			$channel = isset($post['channel']) && is_string($post['channel']) ? $post['channel'] : '';
+			$term = isset($post['term']) && is_scalar($post['term']) ? $post['term'] : null;
+			$down = isset($post['down_payment']) ? $post['down_payment'] : null;
+			if ($snapshot['currency'] === 'EUR' && (!isset($post['context']) || $post['context'] !== $context)) {
+				$scheme = array('eligible' => false, 'term' => $term, 'reason' => 'stale_context', 'rate' => null);
+			} else {
+				$scheme = $resolver->explicit($snapshot, $channel, $term, $down);
+			}
+			$result['offer'] = $this->cartOffer($channel, $scheme, $snapshot['principal'], $down);
 		}
-		if (isset($this->request->post['jet_vnoski'])) {
-			$jet_vnoski = filter_var($this->request->post['jet_vnoski'], FILTER_SANITIZE_NUMBER_INT);
+
+		// Preserve the old send route's product field format. The fields play no role in eligibility.
+		if (($mode === 'initial' && ($result['channels']['jet']['eligible'] || $result['channels']['jet_card']['eligible']))
+			|| ($mode === 'explicit' && $result['offer']['eligible'])) {
+			$result['products'] = $adapter->serializeProducts($snapshot['lines']);
+			if ($mode === 'initial') {
+				foreach ($result['channels'] as $channel => $offer) {
+					if ($offer['eligible']) {
+						$result['quotes'][$channel] = $this->rememberSubmission('cart', $snapshot, $context, $offer, 0, $result['products']);
+					}
+				}
+			} else {
+				$result['quote'] = $this->rememberSubmission('cart', $snapshot, $context, $result['offer'], $down, $result['products']);
+			}
+		}
+		$this->response->setOutput(json_encode($result));
+	}
+
+	public function checkoutAvailability($data = array()) {
+		if (!isset($data['total'])) {
+			return array();
+		}
+
+		$this->load->model('extension/mt_jet_credit/cart_financing');
+		return $this->model_extension_mt_jet_credit_cart_financing->getCheckoutOffers($data['total'], function ($snapshot) {
+			return $this->initialFinancingOffers($snapshot, $this->financingResolver());
+		});
+	}
+
+	public function jet_checkout_offer() {
+		$post = $this->request->post;
+		$mode = isset($post['mode']) && is_string($post['mode']) ? $post['mode'] : '';
+		$channel = isset($post['channel']) && is_string($post['channel']) ? $post['channel'] : '';
+		$term = $mode === 'explicit' && isset($post['term']) && is_scalar($post['term']) ? $post['term'] : null;
+		$down = isset($post['down_payment']) ? $post['down_payment'] : null;
+		$result = array('mode' => $mode, 'context' => null);
+		$reason = 'invalid_mode';
+
+		if ($mode === 'initial' || $mode === 'explicit') {
+			$this->load->model('extension/mt_jet_credit/checkout_financing');
+			$adapter = $this->model_extension_mt_jet_credit_checkout_financing;
+			$state = $adapter->getContext($channel);
+			$reason = $state['reason'];
+			// The rendered order reference is only a freshness hint. The session supplies the order.
+			if ($reason === null && (!isset($post['order']) || !is_scalar($post['order'])
+				|| (string)$post['order'] !== (string)$this->session->data['order_id'])) {
+				$reason = 'stale_order';
+			}
+			if ($reason === null) {
+				$result['context'] = $state['context'];
+				$snapshot = $state['snapshot'];
+				$resolver = $this->financingResolver();
+				if ($mode === 'initial') {
+					$offers = $this->initialFinancingOffers($snapshot, $resolver);
+					$result['offer'] = $offers[$channel];
+				} elseif (!isset($post['context']) || $post['context'] !== $state['context']) {
+					$reason = 'stale_context';
+				} else {
+					$scheme = $resolver->explicit($snapshot, $channel, $term, $down);
+					$result['offer'] = $this->cartOffer($channel, $scheme, $snapshot['principal'], $down);
+				}
+				if (!empty($result['offer']['eligible'])) {
+					$result['products'] = $adapter->serializeProducts($snapshot['lines']);
+					$result['quote'] = $this->rememberSubmission('checkout', $snapshot, $state['context'],
+						$result['offer'], $mode === 'initial' ? 0 : $down, $result['products']);
+				}
+			}
+		}
+		if (!isset($result['offer'])) {
+			$result['offer'] = $this->cartOffer($channel, array(
+				'eligible' => false, 'term' => $term, 'reason' => $reason, 'rate' => null
+			), 0, 0);
+		}
+
+		$this->response->addHeader('Content-Type: application/json');
+		$this->response->addHeader('Cache-Control: no-store');
+		$this->response->setOutput(json_encode($result));
+	}
+
+	private function submissionKeys($scope, array $snapshot) {
+		$store = (int)$this->config->get('config_store_id');
+		$lineIds = array_map(function ($line) { return (string)$line['cart_id']; }, $snapshot['lines']);
+		sort($lineIds, SORT_STRING);
+		// The database row IDs survive a logged-in customer's session replacement.
+		$keys = array(hash('sha256', serialize(array(DB_PREFIX, $store, 'basket-rows', $lineIds))));
+		if ($scope === 'checkout') {
+			$keys[] = hash('sha256', serialize(array(DB_PREFIX, $store, 'checkout', (int)$this->session->data['order_id'])));
+		}
+		return $keys;
+	}
+
+	private function submissionBinding(array $keys, $context, array $offer, $down, array $products) {
+		$customer = isset($this->session->data['customer_id']) ? $this->session->data['customer_id'] : null;
+		return hash('sha256', serialize(array($keys, $customer, $context, $offer['channel'], (int)$offer['term'],
+			number_format((float)$down, 2, '.', ''), $offer['rate'], $offer['financial'], $products)));
+	}
+
+	private function rememberSubmission($scope, array $snapshot, $context, array $offer, $down, array $products) {
+		require_once DIR_SYSTEM . 'library/jet_submission.php';
+		$keys = $this->submissionKeys($scope, $snapshot);
+		$binding = $this->submissionBinding($keys, $context, $offer, $down, $products);
+		return \JetSubmission::remember($this->session, $scope, $keys, $binding, $offer['channel']);
+	}
+
+	protected function submissionStore() {
+		return \JetSubmissionStore::connect();
+	}
+
+	// Internal loader entry for payment controllers. A direct HTTP route has no arguments.
+	public function prepareSubmission($input = array()) {
+		if (!isset($input['scope'], $input['channel'])) return array('reason' => 'invalid_channel');
+		$scope = $input['scope'];
+		$channel = $input['channel'];
+		if (!in_array($scope, array('cart','checkout'), true) || !in_array($channel, array('jet','jet_card'), true)) return array('reason' => 'invalid_channel');
+		if (!isset($this->session->data['currency']) || $this->session->data['currency'] !== 'EUR') {
+			return array('reason' => 'invalid_currency');
+		}
+
+		require_once DIR_SYSTEM . 'library/jet_submission.php';
+		$post = $this->request->post;
+		$quote = \JetSubmission::lookup($this->session, isset($post['quote']) ? $post['quote'] : null, $scope, $channel);
+		if (!$quote) return array('reason' => 'stale_quote');
+
+		try {
+			$store = $this->submissionStore();
+			$blocked = $store->blocked($quote['keys']);
+		} catch (\Exception $error) {
+			return array('reason' => 'submission_unavailable');
+		} catch (\Throwable $error) {
+			return array('reason' => 'submission_unavailable');
+		}
+		if ($blocked !== null) return array('reason' => $blocked);
+
+		if ($scope === 'checkout') {
+			$this->load->model('extension/mt_jet_credit/checkout_financing');
+			$adapter = $this->model_extension_mt_jet_credit_checkout_financing;
+			$state = $adapter->getContext($channel);
+			if ($state['reason'] !== null) {
+
+				return array('reason' => $state['reason']);
+			}
+			$snapshot = $state['snapshot'];
+			$context = $state['context'];
+			$prefix = $channel . '_';
 		} else {
-			$jet_vnoski = (int)$this->config->get('mt_jet_credit_vnoski');
+			$this->load->model('extension/mt_jet_credit/cart_financing');
+			$adapter = $this->model_extension_mt_jet_credit_cart_financing;
+			$snapshot = $adapter->getSnapshot();
+			$context = hash('sha256', serialize($snapshot));
+			$prefix = 'jet_';
 		}
-		if (isset($this->request->post['jet_vnoska'])) {
-			$jet_vnoska = filter_var($this->request->post['jet_vnoska'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+
+		$term = isset($post[$prefix . 'vnoski']) ? $post[$prefix . 'vnoski'] : null;
+		$down = isset($post[$prefix . 'parva']) ? $post[$prefix . 'parva'] : null;
+		$resolver = $this->financingResolver();
+		$scheme = $resolver->explicit($snapshot, $channel, $term, $down);
+		$offer = $this->cartOffer($channel, $scheme, $snapshot['principal'], $down);
+		if (!$offer['eligible']) {
+
+			return array('reason' => $offer['reason']);
+		}
+		$products = $adapter->serializeProducts($snapshot['lines']);
+		$keys = $this->submissionKeys($scope, $snapshot);
+		if ($keys !== $quote['keys'] || $this->submissionBinding($keys, $context, $offer, $down, $products) !== $quote['binding']) {
+
+			return array('reason' => 'stale_quote');
+		}
+
+		$applicantEmail = $scope === 'checkout' ? $state['order']['email']
+			: (isset($post['jet_email']) ? $post['jet_email'] : null);
+		// This value becomes a single CC mailbox in the unchanged bank transport.
+		if (!is_string($applicantEmail) || preg_match('/[\r\n]/', $applicantEmail)
+			|| !filter_var($applicantEmail, FILTER_VALIDATE_EMAIL)) {
+
+			return array('reason' => 'invalid_applicant_email');
+		}
+
+		$fields = $scope === 'cart' ? $products : array();
+		if ($scope === 'checkout') {
+			foreach ($products as $name => $value) $fields[$prefix . $name] = $value;
+		}
+		foreach ($offer['financial'] as $name => $value) $fields[$prefix . substr($name, 4)] = $value;
+		foreach ($fields as $name => $value) {
+			if (array_key_exists($name, $post) && (!is_scalar($post[$name])
+				|| ((string)$post[$name] !== $value && (string)$post[$name] !== htmlspecialchars($value, ENT_COMPAT, 'UTF-8')))) {
+
+				return array('reason' => 'quote_mismatch');
+			}
+		}
+		$fields[$prefix . 'vnoski'] = (string)(int)$term;
+		$fields[$prefix . 'parva'] = number_format((float)$down, 2, '.', '');
+		try {
+			$claim = $store->claim($keys, $channel);
+		} catch (\Exception $error) {
+			return array('reason' => 'submission_unavailable');
+		} catch (\Throwable $error) {
+			return array('reason' => 'submission_unavailable');
+		}
+		if (!isset($claim['lease'])) return $claim;
+		return array('lease' => $claim['lease'], 'fields' => $fields, 'channel' => $channel,
+			'order_id' => $scope === 'checkout' ? (int)$state['order']['order_id'] : null,
+			'order' => $scope === 'checkout' ? $state['order'] : null);
+	}
+
+	private function financingResolver() {
+		require_once DIR_SYSTEM . 'library/jet_cart_eligibility.php';
+		$this->load->model('extension/mt_jet_credit/jetcredit');
+		$promotionModel = $this->model_extension_mt_jet_credit_jetcredit;
+		return new \JetCartEligibility(function ($productId, $term, $principal) use ($promotionModel) {
+			return $promotionModel->getCartPromotionRate($productId, $term, $principal);
+		});
+	}
+
+	private function initialFinancingOffers(array $snapshot, $resolver, $isCart = false) {
+		$preferredTerm = $isCart && $snapshot['cart_total'] < 125
+			? 9 : $this->config->get('mt_jet_credit_vnoski');
+		$preferredTerm = is_int($preferredTerm) || is_string($preferredTerm) ? (string)$preferredTerm : null;
+		$channels = array();
+		foreach ($resolver->initial($snapshot) as $channel => $schemes) {
+			$offers = array();
+			$selected = null;
+			foreach ($schemes['eligible_terms'] as $candidate) {
+				$offer = $this->cartOffer($channel, $candidate, $snapshot['principal'], 0);
+				if ($offer['eligible']) {
+					$offers[] = $offer;
+					if ($selected === null || (string)$offer['term'] === $preferredTerm) {
+						$selected = $offer;
+					}
+				}
+			}
+			$selected = $selected ?: $this->cartOffer($channel, array(
+				'eligible' => false, 'term' => null, 'rate' => null,
+				'reason' => $schemes['reason'] ?: 'insufficient_installment'
+			), 0, 0);
+			$selected['eligible_terms'] = array_map(function ($offer) {
+				return $offer['term'];
+			}, $offers);
+			$channels[$channel] = $selected;
+		}
+		return $channels;
+	}
+
+	private function cartOffer($channel, array $scheme, $total, $down) {
+		$offer = array('channel' => $channel, 'term' => $scheme['term'], 'eligible' => $scheme['eligible'],
+			'reason' => $scheme['reason'], 'rate' => $scheme['rate']);
+		if (!$offer['eligible']) {
+			return $offer;
+		}
+
+		// Keep the legacy calculator's operation order, including subtraction before rounding.
+		$principal = $total - (float)$down;
+		$values = $this->cartFinancialValues($principal, (int)$scheme['term'], (float)$scheme['rate']);
+		foreach ($values as $value) {
+			if (!is_numeric($value) || !is_finite((float)$value)) {
+				$offer['reason'] = 'invalid_financial_values';
+				break;
+			}
+		}
+		if ($offer['reason'] === null && (float)$values['jet_vnoska'] < 20) {
+			$offer['reason'] = 'insufficient_installment';
+		}
+		if ($offer['reason'] !== null) {
+			$offer['eligible'] = false;
+			$offer['rate'] = null;
+			return $offer;
+		}
+
+		$offer['financial'] = $values + array(
+			'jet_priceall' => number_format($total, 2, ".", ""),
+			'jet_total_credit_price' => number_format($principal, 2, ".", "")
+		);
+		return $offer;
+	}
+
+	private function cartFinancialValues($principal, $term, $rate, $suffix = '') {
+		$installment = (($principal / $term) * (1 + ($term * $rate) / 100));
+		$annualRate = $this->RATE($term, $installment, -1 * $principal) * 12;
+		$glp = ($this->RATE($term, $installment, -1 * $principal) * 12) * 100;
+		$gpr = (pow((1 + $annualRate / 12), 12) - 1) * 100;
+		$total = $installment * $term;
+
+		return array(
+			'jet_vnoska' . $suffix => number_format($installment, 2, ".", ""),
+			'jet_gpr' . $suffix => number_format($gpr, 2, ".", ""),
+			'jet_glp' . $suffix => number_format($glp, 2, ".", ""),
+			'jet_obshto' . $suffix => number_format($total, 2, ".", "")
+		);
+	}
+
+	public function jet_send_cart() {
+		$card = isset($this->request->post['jet_card']) ? $this->request->post['jet_card'] : null;
+		if (!empty($this->request->post['jet_lname']) || !in_array($card, array(0, 1, '0', '1'), true)) {
+			$json = array('success' => 'unsuccess', 'reason' => 'invalid_channel');
 		} else {
-			$jet_vnoska = 0.00;
+			$validated = $this->prepareSubmission(array('scope' => 'cart', 'channel' => (int)$card ? 'jet_card' : 'jet'));
+			$json = isset($validated['lease']) ? $validated['lease']->execute(function () use ($validated) {
+				return $this->sendVerifiedCart($validated);
+			}) : array('success' => 'unsuccess', 'reason' => $validated['reason']);
 		}
-		if (isset($this->request->post['jet_parva'])) {
-			$jet_parva = filter_var($this->request->post['jet_parva'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-		} else {
-			$jet_parva = 0.00;
-		}
-		if (isset($this->request->post['jet_total_credit_price'])) {
-			$jet_total_credit_price = filter_var($this->request->post['jet_total_credit_price'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-		} else {
-			$jet_total_credit_price = 0.00;
-		}
-		if (isset($this->request->post['jet_obshto'])) {
-			$jet_obshto = filter_var($this->request->post['jet_obshto'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-		} else {
-			$jet_obshto = 0.00;
-		}
-		if (isset($this->request->post['jet_gpr'])) {
-			$jet_gpr = filter_var($this->request->post['jet_gpr'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-		} else {
-			$jet_gpr = 0.00;
-		}
-		if (isset($this->request->post['jet_glp'])) {
-			$jet_glp = filter_var($this->request->post['jet_glp'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-		} else {
-			$jet_glp = 0.00;
-		}
+		$this->response->addHeader('Content-Type: application/json');
+		$this->response->setOutput(json_encode($json));
+	}
+
+	private function sendVerifiedCart(array $validated) {
+		$lease = $validated['lease'];
+		$jet_card = $validated['channel'] === 'jet_card' ? 1 : 0;
+		$jet_priceall = $validated['fields']['jet_priceall'];
+		$jet_vnoski = $validated['fields']['jet_vnoski'];
+		$jet_vnoska = $validated['fields']['jet_vnoska'];
+		$jet_parva = $validated['fields']['jet_parva'];
+		$jet_products = $validated['fields']['jet_products'];
+		$jet_products_qt = $validated['fields']['jet_products_qt'];
+		$jet_products_pr = $validated['fields']['jet_products_pr'];
+		$jet_products_vr = $validated['fields']['jet_products_vr'];
 		if (isset($this->request->post['jet_name'])) {
 			$jet_name = filter_var($this->request->post['jet_name'], FILTER_SANITIZE_STRING);
 		} else {
@@ -770,32 +1063,6 @@ class ControllerExtensionMtJetCreditJetCredit extends Controller {
 		} else {
 			$jet_phone = " - ";
 		}
-		if (isset($this->request->post['jet_card'])) {
-			$jet_card = filter_var($this->request->post['jet_card'], FILTER_SANITIZE_NUMBER_INT);
-		} else {
-			$jet_card = 0;
-		}
-		if (isset($this->request->post['jet_products'])) {
-			$jet_products = filter_var($this->request->post['jet_products'], FILTER_SANITIZE_STRING);
-		} else {
-			$jet_products = '';
-		}
-		if (isset($this->request->post['jet_products_qt'])) {
-			$jet_products_qt = filter_var($this->request->post['jet_products_qt'], FILTER_SANITIZE_STRING);
-		} else {
-			$jet_products_qt = '';
-		}
-		if (isset($this->request->post['jet_products_pr'])) {
-			$jet_products_pr = filter_var($this->request->post['jet_products_pr'], FILTER_SANITIZE_STRING);
-		} else {
-			$jet_products_pr = '';
-		}
-		if (isset($this->request->post['jet_products_vr'])) {
-			$jet_products_vr = filter_var($this->request->post['jet_products_vr'], FILTER_SANITIZE_STRING);
-		} else {
-			$jet_products_vr = '';
-		}
-
 		$toEmail_admin = (string)$this->config->get('config_email');
 		$toEmail_other = (string)$this->config->get('mt_jet_credit_mail');
 		$jet_id = (string)$this->config->get('mt_jet_credit_id');
@@ -822,7 +1089,7 @@ class ControllerExtensionMtJetCreditJetCredit extends Controller {
 		$_product = explode('_', $jet_products);
 		$product_q = explode('_', $jet_products_qt);
 		$product_p = explode('_', $jet_products_pr);
-		$product_v = json_decode(html_entity_decode($jet_products_vr), true);
+		$product_v = json_decode($jet_products_vr, true);
 
 		for ($index = 0; $index < sizeof($_product); $index++) {
 			$jet_product_id = $_product[$index];
@@ -850,11 +1117,7 @@ class ControllerExtensionMtJetCreditJetCredit extends Controller {
 				$product_m_txt = " - ";
 			}
 
-			if (isset($product_p[$index]) && (float)$product_p[$index] != 0) {
-				$product_p_txt = (float)$product_p[$index];
-			}else{
-				$product_p_txt = (float)$this->tax->calculate($product['price'], $product['tax_class_id'], true);
-			}
+			$product_p_txt = (float)$product_p[$index];
 			if (isset($product_q[$index]) && (int)$product_q[$index] != 0) {
 				$product_q_txt = (int)$product_q[$index];
 			}else{
@@ -883,8 +1146,7 @@ class ControllerExtensionMtJetCreditJetCredit extends Controller {
 		$body .= "Месечна вноска: $jet_vnoska;\r\n";
 		$body .= "Първоначална вноска: " . number_format(floatval($jet_parva), 2, ".", "") . ";\r\n";
 
-		$jet_count = (int)$this->config->get('mt_jet_credit_count');
-		$this->editSettingValue('mt_jet_credit', 'mt_jet_credit_count', $jet_count + 1);
+		$jet_count = $lease->reserveReference();
 		$subject_raw = $jet_id . ", онлайн заявка по поръчка $jet_count";
         $subject = $this->jetEncodeSubjectUtf8($subject_raw);
 
@@ -894,6 +1156,7 @@ class ControllerExtensionMtJetCreditJetCredit extends Controller {
 		$headers .= "CC: " . $toEmail_other . ", " . $jet_email . "\r\n";
 
 		if (mail($toEmail_admin, $subject, $body, $headers)) {
+			$lease->mark('accepted');
 			$order_data['invoice_prefix'] = $this->config->get('config_invoice_prefix');
 			$order_data['store_id'] = $this->config->get('config_store_id');
 			$order_data['store_name'] = $this->config->get('config_name');
@@ -1028,11 +1291,7 @@ class ControllerExtensionMtJetCreditJetCredit extends Controller {
 			for ($index = 0; $index < sizeof($_product); $index++) {
 				$jet_product_id = $_product[$index];
 				$product_info = $this->model_catalog_product->getProduct($jet_product_id);
-				if (isset($product_p[$index]) && (float)$product_p[$index] != 0) {
-					$jet_price = (float)$product_p[$index];
-				}else{
-					$jet_price = (float)$this->tax->calculate($product['price'], $product['tax_class_id'], true);
-				}
+				$jet_price = (float)$product_p[$index];
 				if (isset($product_q[$index]) && (int)$product_q[$index] != 0) {
 					$jet_quantity = (int)$product_q[$index];
 				}else{
@@ -1080,15 +1339,20 @@ class ControllerExtensionMtJetCreditJetCredit extends Controller {
 			$jet_order_id = $this->model_checkout_order->addOrder($order_data);
 			$jet_order_status_id = $jet_card == 1 ? $this->config->get('jet_card_order_status_id') : $this->config->get('jet_order_status_id');
 			$this->model_checkout_order->addOrderHistory($jet_order_id, $jet_order_status_id);
+			$order = $jet_order_id ? $this->model_checkout_order->getOrder($jet_order_id) : null;
+			if (!$order || (int)$order['order_status_id'] <= 0) {
+				throw new \RuntimeException('JET order was not finalized.');
+			}
 			$this->cart->clear();
+			$lease->mark('complete');
 
 			$json['success'] = 'success';
 		}else{
-			$json['success'] = 'unsuccess';
+			$lease->mark('failed');
+			$json = array('success' => 'unsuccess', 'reason' => 'transport_failed');
 		}
 
-		$this->response->addHeader('Content-Type: application/json');
-		$this->response->setOutput(json_encode($json));
+		return $json;
 	}
 
 	public function editSettingValue($code = '', $key = '', $value = '', $store_id = 0) {

@@ -3,16 +3,54 @@ class ControllerExtensionModuleMtJetCredit extends Controller {
 
 	private $error = array();
 	const JET_VNOSKI_DEFAULT = 12;
+	const SUBMISSION_INSTALLED = 'mt_jet_credit_submission_installed';
 
 	public function index() {
 		$this->load->language('extension/module/mt_jet_credit');
 		$this->document->setTitle($this->language->get('heading_title'));
 		$this->load->model('setting/setting');
-		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validate()) {
-			$this->model_setting_setting->editSetting('mt_jet_credit', $this->request->post);
-			$this->session->data['success'] = 'Успешно записахте направените промени.';
-			$this->cache->delete('mt_jet_credit');
-			$this->response->redirect($this->url->link('extension/module/mt_jet_credit', 'token=' . $this->session->data['token'], true));
+		$existing_settings = $this->model_setting_setting->getSetting('mt_jet_credit');
+		$submission_installed = isset($existing_settings[self::SUBMISSION_INSTALLED]);
+		$next_reference = $this->currentReference();
+		if (isset($this->session->data['jet_install_error'])) {
+			$this->error['warning'] = $this->session->data['jet_install_error'];
+			unset($this->session->data['jet_install_error']);
+		} elseif (($next_reference === null || !$submission_installed) && $this->request->server['REQUEST_METHOD'] === 'GET'
+			&& $this->adminTokenValid() && $this->user->hasPermission('modify', 'extension/module/mt_jet_credit')
+			&& $existing_settings) {
+			// An installed older version has no Install button. Upgrade during a normal settings visit.
+			if ($this->installSubmission($existing_settings)) {
+				$next_reference = $this->currentReference();
+				$submission_installed = true;
+			} else {
+				$this->error['warning'] = $this->submissionInstallError();
+			}
+		}
+
+		if ($this->request->server['REQUEST_METHOD'] === 'POST'
+			&& isset($this->request->post['mt_jet_credit_status']) && $this->validate()) {
+			try {
+				$legacy_reference = $submission_installed || $next_reference !== null
+					? (isset($existing_settings['mt_jet_credit_count']) ? $existing_settings['mt_jet_credit_count'] : null)
+					: $this->submissionLedger()->legacyReference();
+			} catch (\Exception $error) {
+				$this->error['warning'] = $this->submissionInstallError();
+			} catch (\Throwable $error) {
+				$this->error['warning'] = $this->submissionInstallError();
+			}
+			if (!$this->error) {
+				$settings = $this->request->post;
+				unset($settings['mt_jet_credit_count'], $settings[self::SUBMISSION_INSTALLED]);
+				if ($submission_installed || $next_reference !== null) {
+					$settings = array(self::SUBMISSION_INSTALLED => '1') + $settings;
+				}
+				// OpenCart replaces the settings group. Keep the original upgrade seed, if present.
+				if ($legacy_reference !== null) $settings['mt_jet_credit_count'] = $legacy_reference;
+				$this->model_setting_setting->editSetting('mt_jet_credit', $settings);
+				$this->session->data['success'] = 'Успешно записахте направените промени.';
+				$this->cache->delete('mt_jet_credit');
+				$this->response->redirect($this->url->link('extension/module/mt_jet_credit', 'token=' . $this->session->data['token'], true));
+			}
 		}
 
 		$data['heading_title'] = $this->language->get('heading_title');
@@ -169,11 +207,7 @@ class ControllerExtensionModuleMtJetCredit extends Controller {
 		} else {
 			$data['mt_jet_credit_vnoska'] = $this->config->get('mt_jet_credit_vnoska') == '' ? 1 : $this->config->get('mt_jet_credit_vnoska');
 		}
-		if (isset($this->request->post['mt_jet_credit_count'])) {
-			$data['mt_jet_credit_count'] = $this->request->post['mt_jet_credit_count'];
-		} else {
-			$data['mt_jet_credit_count'] = $this->config->get('mt_jet_credit_count') == "" ? 1 : $this->config->get('mt_jet_credit_count');
-		}
+		$data['mt_jet_credit_count'] = $next_reference;
 		if (isset($this->request->post['mt_jet_credit_price'])) {
 			$data['mt_jet_credit_price'] = $this->request->post['mt_jet_credit_price'];
 		} else {
@@ -192,9 +226,75 @@ class ControllerExtensionModuleMtJetCredit extends Controller {
 		unset($this->session->data['success']);
 	}
 
+	private function adminTokenValid() {
+		return isset($this->request->get['token'], $this->session->data['token'])
+			&& is_string($this->request->get['token']) && $this->request->get['token'] !== ''
+			&& $this->request->get['token'] === $this->session->data['token'];
+	}
+
+	private function submissionLedger() {
+		require_once DIR_SYSTEM . 'library/jet_submission.php';
+		return new \JetSubmissionStore($this->db, DB_PREFIX);
+	}
+
+	private function currentReference() {
+		try {
+			return $this->submissionLedger()->nextReference();
+		} catch (\Exception $error) {
+			return null;
+		} catch (\Throwable $error) {
+			return null;
+		}
+	}
+
+	private function installSubmission(array $existing_settings) {
+		try {
+			$store = $this->submissionLedger();
+			if (isset($existing_settings[self::SUBMISSION_INSTALLED])) {
+				// The table previously existed for this installation. Never reseed it from legacy settings.
+				$store->nextReference();
+				return true;
+			}
+			$fresh_install = !$existing_settings;
+			if ($fresh_install) {
+				$promotion_table = $this->db->query("SHOW TABLE STATUS WHERE Name = '" . DB_PREFIX . "jet_kop'");
+				$fresh_install = !$promotion_table->rows;
+			}
+			$store->prepare(!$fresh_install);
+			$store->prepareReference($fresh_install);
+			$table = '`' . DB_PREFIX . 'setting`';
+			$key = self::SUBMISSION_INSTALLED;
+			return $this->db->query("INSERT INTO " . $table . " (store_id,code,`key`,value,serialized)" .
+				" SELECT 0,'mt_jet_credit','" . $key . "','1',0 WHERE NOT EXISTS (SELECT 1 FROM " . $table .
+				" WHERE store_id=0 AND code='mt_jet_credit' AND `key`='" . $key . "')") === true;
+		} catch (\Exception $error) {
+			return false;
+		} catch (\Throwable $error) {
+			return false;
+		}
+	}
+
+	private function submissionInstallError() {
+		return 'Инсталацията на JetCredit не може да завърши безопасно. Банковите заявки са недостъпни, докато хранилището или началният банков номер не могат да бъдат потвърдени.';
+	}
+
 	public function install() {
+		// Core grants module permissions in the database, after the current user's permissions were loaded.
+		if (!$this->adminTokenValid() || !$this->user->hasPermission('modify', 'extension/extension/module')) {
+			$this->response->addHeader('HTTP/1.1 403 Forbidden');
+			return;
+		}
 		$this->load->model('setting/setting');
+		$existingSettings = $this->model_setting_setting->getSetting('mt_jet_credit');
+		$table_kop_name = DB_PREFIX . 'jet_kop';
+		if (!$this->installSubmission($existingSettings)) {
+			$this->session->data['jet_install_error'] = $this->submissionInstallError();
+			$this->response->redirect($this->url->link('extension/module/mt_jet_credit',
+				'token=' . $this->session->data['token'], true));
+			return;
+		}
 		$default_settings = array(
+			self::SUBMISSION_INSTALLED   => '1',
 			'mt_jet_credit_status'        => 1,
 			'mt_jet_credit_cart_show'     => 1,
 			'mt_jet_credit_status_card'   => 1,
@@ -208,8 +308,6 @@ class ControllerExtensionModuleMtJetCredit extends Controller {
 			'mt_jet_credit_btn_round'     => 16,
 			'mt_jet_credit_btn_font'      => 14,
 		);
-		$this->model_setting_setting->editSetting('mt_jet_credit', $default_settings);
-		$table_kop_name = DB_PREFIX . 'jet_kop';
 		$this->db->query("CREATE TABLE IF NOT EXISTS `$table_kop_name` (
 			`id` int(11) NOT NULL AUTO_INCREMENT,
 			`jet_product_id` varchar(20) NOT NULL,
@@ -221,9 +319,17 @@ class ControllerExtensionModuleMtJetCredit extends Controller {
 			PRIMARY KEY (`id`),
 			FULLTEXT idx (`jet_product_id`)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;");
+		if (!array_diff_key($existingSettings, array(self::SUBMISSION_INSTALLED => true))) {
+			$this->model_setting_setting->editSetting('mt_jet_credit', $default_settings);
+		}
 	}
 
 	public function uninstall() {
+		if (!$this->adminTokenValid() || !$this->user->hasPermission('modify', 'extension/extension/module')) {
+			$this->response->addHeader('HTTP/1.1 403 Forbidden');
+			return;
+		}
+		$this->submissionLedger()->drop();
 		$this->load->model('setting/setting');
 		$this->model_setting_setting->deleteSetting('mt_jet_credit');
 		$table_kop_name = DB_PREFIX . 'jet_kop';
